@@ -211,54 +211,52 @@ def run_concat_mwr(day_folders, mwr_out_path):
 
 		# Save glued MWR modules into a new .nc file:
 		mwr_outname = mwr_out_path + folder_date + "_v01.nc"
-		new_nc = nc.Dataset(mwr_outname, "w", format="NETCDF4")
+		with nc.Dataset(mwr_outname, "w", format="NETCDF4") as new_nc:
 
-		# dimensions: time x frequency:
-		new_nc.createDimension("time", n_time)
-		new_nc.createDimension("number_frequencies", n_frq)
+			# dimensions: time x frequency:
+			new_nc.createDimension("time", n_time)
+			new_nc.createDimension("number_frequencies", n_frq)
 
-		# Global attributes:
-		new_nc.description = "HAMP: v01: All Microwave Radiometer modules (KV, 11990, 183) concatenated and brought to a time line from the earliest to the latest measurement of the day."
-		new_nc.history = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-		new_nc.author = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
+			# Global attributes:
+			new_nc.description = "HAMP: v01: All Microwave Radiometer modules (KV, 11990, 183) concatenated and brought to a time line from the earliest to the latest measurement of the day."
+			new_nc.history = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+			new_nc.author = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
 
-		# Create variables:
-		freq = new_nc.createVariable("frequencies", "f8", ("number_frequencies"))
-		time = new_nc.createVariable("time", "f8", ("time"))
-		rain_flag = new_nc.createVariable("rain_flag", "i4", ("time"))
-		elev_angle = new_nc.createVariable("elevation_angle", "f4", ("time"))
-		azim_angle = new_nc.createVariable("azimuth_angle", "f4", ("time"))
-		TB = new_nc.createVariable("TBs", "f8", ("time", "number_frequencies"))
-		integr_time = new_nc.createVariable("integration_time_per_sample", "i4")
-		ultra_sampling_factor = new_nc.createVariable("ultra_sampling_factor", "i4")
+			# Create variables:
+			freq = new_nc.createVariable("frequencies", "f8", ("number_frequencies"))
+			time = new_nc.createVariable("time", "f8", ("time"))
+			rain_flag = new_nc.createVariable("rain_flag", "i4", ("time"))
+			elev_angle = new_nc.createVariable("elevation_angle", "f4", ("time"))
+			azim_angle = new_nc.createVariable("azimuth_angle", "f4", ("time"))
+			TB = new_nc.createVariable("TBs", "f8", ("time", "number_frequencies"))
+			integr_time = new_nc.createVariable("integration_time_per_sample", "i4")
+			ultra_sampling_factor = new_nc.createVariable("ultra_sampling_factor", "i4")
 
-		# variable attributes:
-		freq.long_name = "Channel frequency"
-		freq.units = "GHz"
-		time.long_name = "sample time"
-		time.units = "seconds since 2020-01-01 00:00:00"
-		time.comment = "reference time zone indicated in field time_reference"
-		rain_flag.description = "0 = no rain, 1 = raining"
-		elev_angle.long_name = "viewing_elevation angle"
-		elev_angle.units = "degrees (-90 - +180)"
-		elev_angle.comment = "-90 is blackbody view, 0 is horizontal view (red arrow), 90 is zenith view, 180 is horizontal view (2nd quadrant)"
-		azim_angle.units = "degrees (0 - 360)"
-		TB.description = "Brightness temperature for K, V, W, F and G band. F and G band are double side band averaged."
-		TB.units = "K"
-		integr_time.long_name = "integration time for each sample"
-		integr_time.units = "seconds"
-		ultra_sampling_factor.long_name = "flag indicating the time zone reference"
-		ultra_sampling_factor.units = "unitless"
-		ultra_sampling_factor.comment = "0 = local time, 1 = UTC"
+			# variable attributes:
+			freq.long_name = "Channel frequency"
+			freq.units = "GHz"
+			time.long_name = "sample time"
+			time.units = "seconds since 2020-01-01 00:00:00"
+			time.comment = "reference time zone indicated in field time_reference"
+			rain_flag.description = "0 = no rain, 1 = raining"
+			elev_angle.long_name = "viewing_elevation angle"
+			elev_angle.units = "degrees (-90 - +180)"
+			elev_angle.comment = "-90 is blackbody view, 0 is horizontal view (red arrow), 90 is zenith view, 180 is horizontal view (2nd quadrant)"
+			azim_angle.units = "degrees (0 - 360)"
+			TB.description = "Brightness temperature for K, V, W, F and G band. F and G band are double side band averaged."
+			TB.units = "K"
+			integr_time.long_name = "integration time for each sample"
+			integr_time.units = "seconds"
+			ultra_sampling_factor.long_name = "flag indicating the time zone reference"
+			ultra_sampling_factor.units = "unitless"
+			ultra_sampling_factor.comment = "0 = local time, 1 = UTC"
 
-		# write into variables:
-		freq[:] = mwr_dict_all['frequencies']
-		time[:] = time_axis
-		rain_flag[:] = mwr_dict_all['rain_flag']
-		elev_angle[:] = mwr_dict_all['elevation_angle']
-		azim_angle[:] = mwr_dict_all['azimuth_angle']
-		TB[:,:] = mwr_dict_all['TBs']
-		integr_time[:] = [mwr_module_dict[mod]['integration_time_per_sample'] for mod_key, module_active in module_exist.items() if module_active][0]
-		ultra_sampling_factor[:] = [mwr_module_dict[mod]['ultra_sampling_factor'] for mod_key, module_active in module_exist.items() if module_active][0]
-
-		new_nc.close()
+			# write into variables:
+			freq[:] = mwr_dict_all['frequencies']
+			time[:] = time_axis
+			rain_flag[:] = mwr_dict_all['rain_flag']
+			elev_angle[:] = mwr_dict_all['elevation_angle']
+			azim_angle[:] = mwr_dict_all['azimuth_angle']
+			TB[:,:] = mwr_dict_all['TBs']
+			integr_time[:] = [mwr_module_dict[mod_key]['integration_time_per_sample'] for mod_key, module_active in module_exist.items() if module_active][0]
+			ultra_sampling_factor[:] = [mwr_module_dict[mod_key]['ultra_sampling_factor'] for mod_key, module_active in module_exist.items() if module_active][0]
