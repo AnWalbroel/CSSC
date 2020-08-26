@@ -25,12 +25,12 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 
 	def lat_bound_to_slice(lat_bound):	# converts latitude boundaries to the OPENDAP slices for lat
 
-		return [int((lat_bound[0] + 90)*10), int((lat_bound[1] + 90)*10)]
+		return [(lat_bound[0] + 90)*10, (lat_bound[1] + 90)*10]
 
 
 	def lon_bound_to_slice(lon_bound):	# converts latitude boundaries to the OPENDAP slices for lat
 
-		return [int((lon_bound[0] + 180)*10), int((lon_bound[1] + 180)*10)]
+		return [(lon_bound[0] + 180)*10, (lon_bound[1] + 180)*10]
 
 
 
@@ -74,8 +74,8 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 		daynumber = dr.dayofyear	# day number of the specified year
 		thisyear = str(dr.year)
 		date_formatted = dr.strftime("%Y%m%d")
-		lat_slice_formatted = str(lat_slice[0]) + ":1:" + str(lat_slice[1])		# e.g. 450:1:900
-		lon_slice_formatted = str(lon_slice[0]) + ":1:" + str(lon_slice[1])		# e.g. 1140:1:1400
+		lat_slice_formatted = "%d:1:%d"%(lat_slice[0], lat_slice[1])		# e.g. 450:1:900
+		lon_slice_formatted = "%d:1:%d"%(lon_slice[0], lon_slice[1])		# e.g. 1140:1:1400
 		if daynumber < 10:
 			daynumber = "00" + str(daynumber)	# add two more 0 in front of it so that e.g. number 6 will be 006
 		elif (daynumber >= 10) & (daynumber < 100):

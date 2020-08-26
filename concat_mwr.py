@@ -7,81 +7,89 @@ import pdb
 
 
 
-def run_concat_mwr(mwr_base_path, mwr_out_path):
-
-	day_folders = sorted(glob.glob(mwr_base_path + "*"))[0:17]			##################	# all day folders will be saved here
-
+def run_concat_mwr(day_folders, mwr_out_path):
 
 	for folder in day_folders:
-		folder_modules = [folder + "/radiometer/KV/", folder + "/radiometer/11990/", folder + "/radiometer/183/"]			##################
-		modules = ['KV', '11990', '183']
+		folder_modules = {										##################
+			'KV': folder + "/radiometer/KV/",					##################
+			'11990': folder + "/radiometer/11990/",				##################
+			'183': folder + "/radiometer/183/"					##################
+			}
+		modules = ['KV', '11990', '183']	# available modules within HAMP
 		# pdb.set_trace()
 		folder_date = folder[-6:]																							##################
 
 		print("Opening mwr file of '" + folder_date + "' \n")
 
 		# check if the folders actually exist: if true: can be used for concatenating:
-		module_exist = [False, False, False]			# [KV, 11990, 183]
-		if os.path.exists(folder_modules[0] + folder_date + ".BRT.NC"):
-			module_exist[0] = True
-		if os.path.exists(folder_modules[1] + folder_date + ".BRT.NC"):
-			module_exist[1] = True
-		if os.path.exists(folder_modules[2] + folder_date + ".BRT.NC"):
-			module_exist[2] = True
+		module_exist = {module: False for module in modules}	# {KV: ..., 11990: ..., 183: ...}
+		for module in modules:
+			if os.path.exists(folder_modules[module] + folder_date + ".BRT.NC"):
+				module_exist[module] = True
 
 		# the relevant filenames are formatted like this: yymmdd.BRT.NC: If HALO landed after midnight another file with the next day's date
 		# may exist.
 		nextdayfile = (datetime.datetime.strptime(folder_date, "%y%m%d") + datetime.timedelta(days=1)).strftime("%y%m%d")
-		mwr_files = [folder_modules[k] + folder_date + ".BRT.NC" for k, module_active in enumerate(module_exist) if module_active]		# .brt.nc files of that day before midnight
+		mwr_files = dict()
+		for mod_key, folder_module in folder_modules.items():
+			if module_exist[mod_key]:
+				mwr_files[mod_key] = folder_module + folder_date + ".BRT.NC"		# .brt.nc files of that day before midnight
 		# check for additional files (after midnight):
-		add_files = [folder_modules[k] + nextdayfile + ".BRT.NC" for k, aftermidnight in enumerate([folmod + nextdayfile + ".BRT.NC" for folmod in folder_modules]) if os.path.exists(aftermidnight)]
+		add_files = dict()
+		for mod_key, aftermidnight in {mwr_key: folder_module + nextdayfile + ".BRT.NC" for mwr_key, folder_module in folder_modules.items()}.items():
+			if os.path.exists(aftermidnight):
+				add_files[mod_key] = folder_modules[mod_key] + nextdayfile + ".BRT.NC"
 
 		# Read in keys and concatenate all frequencies that we can find:
 		mwr_dict_all = dict()				# will contain all modules for a day
 		mwr_module_dict = dict()			# contains each single module in a seperate dictionary
 		mwr_module_dict_add = dict()		# contains the mwr measurements after midnight
 
-		for mwr_file in mwr_files:
+		for mod_key, mwr_file in mwr_files.items(): # mod_key: either KV, 11990 or 183 ... depends on the currently read file
 			mwr_nc = nc.Dataset(mwr_file)
 			mwr_keys = mwr_nc.variables.keys()
 			mwr_dims = [mwr_nc.dimensions['time'].size, mwr_nc.dimensions['number_frequencies'].size]		# ntimes x nfreq
 
-			module_key = [m_key for m_key in modules if m_key in mwr_file][0]		# either KV, 11990 or 183 ... depends on the currently read file
 
-			mwr_module_dict[module_key] = dict()
+			mwr_module_dict[mod_key] = dict()
 
 			# read variables of mwr_file:
 			for key in mwr_keys:
 				if key == 'time':
-					mwr_module_dict[module_key][key] = np.asarray(mwr_nc.variables[key]).astype(float)			# necessary to covert to unixtime
+					mwr_module_dict[mod_key][key] = np.asarray(mwr_nc.variables[key]).astype(float)			# necessary to covert to unixtime
 
 					# and finally converting to unixtime:
 					time_base = datetime.datetime.strptime(mwr_nc.variables['time'].units[14:], "%d.%m.%Y, %H:%M:%S") # time base given in the units attribute
-					mwr_module_dict[module_key][key] = (time_base - datetime.datetime(1970,1,1)).total_seconds() + mwr_module_dict[module_key][key]
+					if not mwr_nc.variables['time'].units.lower().startswith('seconds since'):
+						raise ValueError("Expected time units in seconds. Given '%s'" % mwr_nc.variables['time'].units)
+					else:
+						mwr_module_dict[mod_key][key] = (time_base - datetime.datetime(1970,1,1)).total_seconds() + mwr_module_dict[mod_key][key]
 
 				else:
-					mwr_module_dict[module_key][key] = np.asarray(mwr_nc.variables[key])
+					mwr_module_dict[mod_key][key] = np.asarray(mwr_nc.variables[key])
 
 		# Handling the measurements after midnight with the same procedure:
-		for add_file in add_files:
+		for mod_key, add_file in add_files.items():	# mod_key: either KV, 11990 or 183 ... depends on the currently read file
 			mwr_nc = nc.Dataset(add_file)
 			mwr_keys = mwr_nc.variables.keys()
 			mwr_dims = [mwr_nc.dimensions['time'].size, mwr_nc.dimensions['number_frequencies'].size]		# ntimes x nfreq
 
-			module_key = [m_key for m_key in modules if m_key in add_file][0]		# either KV, 11990 or 183 ... depends on the currently read file
 
-			mwr_module_dict_add[module_key] = dict()		# will contain the 'after midnight' measurements
+			mwr_module_dict_add[mod_key] = dict()		# will contain the 'after midnight' measurements
 
 			# read variables of mwr_file:
 			for key in mwr_keys:
 				if key == 'time':
-					mwr_module_dict_add[module_key][key] = np.asarray(mwr_nc.variables[key]).astype(float)			# necessary to covert to unixtime
+					mwr_module_dict_add[mod_key][key] = np.asarray(mwr_nc.variables[key]).astype(float)			# necessary to covert to unixtime
 
 					# and finally converting to unixtime:
-					time_base = datetime.datetime.strptime(mwr_nc.variables['time'].units[14:], "%d.%m.%Y, %H:%M:%S") # time base given in the units attribute
-					mwr_module_dict_add[module_key][key] = (time_base - datetime.datetime(1970,1,1)).total_seconds() + mwr_module_dict_add[module_key][key]
+					time_base = datetime.datetime.strptime(mwr_nc.variables['time'].units[14:], "%d.%m.%Y, %H:%M:%S") # time base given in the units attribute#
+					if not mwr_nc.variables['time'].units.lower().startswith('seconds since'):
+						raise ValueError("Expected time units in seconds. Given '%s'" % mwr_nc.variables['time'].units)
+					else:
+						mwr_module_dict_add[mod_key][key] = (time_base - datetime.datetime(1970,1,1)).total_seconds() + mwr_module_dict_add[mod_key][key]
 				else:
-					mwr_module_dict_add[module_key][key] = np.asarray(mwr_nc.variables[key])
+					mwr_module_dict_add[mod_key][key] = np.asarray(mwr_nc.variables[key])
 
 
 		# Now all variables for the current day have been read in: Now they have to be glued together accordingly:
@@ -97,7 +105,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 		time_0 = np.min(np.asarray([mwr_module_dict[mod]['time'][0] for mod in used_modules]))		# earliest measurement of the day
 		time_end = np.max(np.asarray([mwr_module_dict[mod]['time'][-1] for mod in used_modules]))	# latest measurement before midnight
 
-		if add_used_modules != []:
+		if add_used_modules:
 			time_end = np.max(np.asarray([mwr_module_dict_add[mod]['time'][-1] for mod in add_used_modules]))		# absolute latest measurement
 
 		# create a 4 Hz time line:
@@ -108,17 +116,17 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 		# make sure the 4 Hz measurements remain (take 4 lines):
 		n_time = len(time_axis)
 		n_frq = 26
-		mwr_dict_all['TBs'] = np.zeros((n_time, n_frq))			# HAMP has got 26 channels... although 183 is missing one frequency (the outermost)
+		mwr_dict_all['TBs'] = np.empty((n_time, n_frq))		# HAMP has got 26 channels... although 183 is missing one frequency (the outermost)
+		mwr_dict_all['TBs'][:] = np.nan				# first assume that there is no measurement for the current time step: it'll be filled afterwards
 		mwr_dict_all['rain_flag'] = np.zeros((n_time, 1))		# rain flag for each time stamp
 		mwr_dict_all['elevation_angle'] = np.zeros((n_time, 1))
 		mwr_dict_all['azimuth_angle'] = np.zeros((n_time, 1))
+
+		time_axis = time_axis.astype(float)
 		for k in range(0, n_time-3, 4):
 
 			# unfortunately, all modules (and after midnight files) have to be treated seperately because the number of non-zero entries may differ!
 			# -> may be a bit slow, but safe.
-
-			# first assume that there is no measurement for the current time step: it'll be filled afterwards
-			mwr_dict_all['TBs'][k:k+4,:] = np.broadcast_to(float('nan'), (1, n_frq))
 
 
 			# check all modules because frequencies also have to be concatenated:
@@ -126,7 +134,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 			if 'KV' in used_modules:
 				# for as many time values as you can find in mwr_module_dict[...]['time']: do stuff
 				# --> necessary because mwr measurements aren't always 4 Hz ... sometimes there were e.g. 3 per second, sometimes 5, sometimes 8
-				for j in range(0, np.count_nonzero(mwr_module_dict['KV']['time'] == time_axis[k])): # count entries where mwr_module time matches the current time axis
+				for j in range(np.count_nonzero(mwr_module_dict['KV']['time'] == time_axis[k])): # count entries where mwr_module time matches the current time axis
 					idx_KV = np.argwhere(mwr_module_dict['KV']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 0:len(mwr_module_dict['KV']['frequencies'])] = mwr_module_dict['KV']['TBs'][idx_KV, :]
 					mwr_dict_all['rain_flag'][k+j] = mwr_module_dict['KV']['rain_flag'][idx_KV]
@@ -134,7 +142,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 					mwr_dict_all['azimuth_angle'][k+j] = mwr_module_dict['KV']['azimuth_angle'][idx_KV]
 
 			if 'KV' in add_used_modules:	# same for the after midnight measurements:
-				for j in range(0, np.count_nonzero(mwr_module_dict_add['KV']['time'] == time_axis[k])):
+				for j in range(np.count_nonzero(mwr_module_dict_add['KV']['time'] == time_axis[k])):
 					idx_KV_add = np.argwhere(mwr_module_dict_add['KV']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 0:len(mwr_module_dict_add['KV']['frequencies'])] = mwr_module_dict_add['KV']['TBs'][idx_KV_add, :]
 					mwr_dict_all['rain_flag'][k+j] = mwr_module_dict_add['KV']['rain_flag'][idx_KV_add]
@@ -144,7 +152,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 
 			# W and F band:
 			if '11990' in used_modules:
-				for j in range(0, np.count_nonzero(mwr_module_dict['11990']['time'] == time_axis[k])):
+				for j in range(np.count_nonzero(mwr_module_dict['11990']['time'] == time_axis[k])):
 					idx_WF = np.argwhere(mwr_module_dict['11990']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 14] = mwr_module_dict['11990']['TBs'][idx_WF, 0]
 					mwr_dict_all['TBs'][k+j, 15:14+len(mwr_module_dict['11990']['frequencies'])] = mwr_module_dict['11990']['TBs'][idx_WF, 1:]
@@ -153,7 +161,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 					mwr_dict_all['azimuth_angle'][k+j] = mwr_module_dict['11990']['azimuth_angle'][idx_WF]
 
 			if '11990' in add_used_modules:
-				for j in range(0, np.count_nonzero(mwr_module_dict_add['11990']['time'] == time_axis[k])):
+				for j in range(np.count_nonzero(mwr_module_dict_add['11990']['time'] == time_axis[k])):
 					idx_WF_add = np.argwhere(mwr_module_dict_add['11990']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 14] = mwr_module_dict_add['11990']['TBs'][idx_WF_add, 0]
 					mwr_dict_all['TBs'][k+j, 15:14+len(mwr_module_dict_add['11990']['frequencies'])] = mwr_module_dict_add['11990']['TBs'][idx_WF_add, 1:]
@@ -164,7 +172,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 
 			# G band: 
 			if '183' in used_modules:
-				for j in range(0, np.count_nonzero(mwr_module_dict['183']['time'] == time_axis[k])):
+				for j in range(np.count_nonzero(mwr_module_dict['183']['time'] == time_axis[k])):
 					idx_G = np.argwhere(mwr_module_dict['183']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 19:19+len(mwr_module_dict['183']['frequencies'])] = mwr_module_dict['183']['TBs'][idx_G, :]
 					mwr_dict_all['rain_flag'][k+j] = mwr_module_dict['183']['rain_flag'][idx_G]
@@ -172,7 +180,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 					mwr_dict_all['azimuth_angle'][k+j] = mwr_module_dict['183']['azimuth_angle'][idx_G]
 
 			if '183' in add_used_modules:
-				for j in range(0, np.count_nonzero(mwr_module_dict_add['183']['time'] == time_axis[k])):
+				for j in range(np.count_nonzero(mwr_module_dict_add['183']['time'] == time_axis[k])):
 					idx_G_add = np.argwhere(mwr_module_dict_add['183']['time'] == time_axis[k])[j]
 					mwr_dict_all['TBs'][k+j, 19:19+len(mwr_module_dict_add['183']['frequencies'])] = mwr_module_dict_add['183']['TBs'][idx_G_add, :]
 					mwr_dict_all['rain_flag'][k+j] = mwr_module_dict_add['183']['rain_flag'][idx_G_add]
@@ -249,7 +257,7 @@ def run_concat_mwr(mwr_base_path, mwr_out_path):
 		elev_angle[:] = mwr_dict_all['elevation_angle']
 		azim_angle[:] = mwr_dict_all['azimuth_angle']
 		TB[:,:] = mwr_dict_all['TBs']
-		integr_time[:] = [mwr_module_dict[mod]['integration_time_per_sample'] for i_mod, mod in enumerate(modules) if module_exist[i_mod]][0]
-		ultra_sampling_factor[:] = [mwr_module_dict[mod]['ultra_sampling_factor'] for i_mod, mod in enumerate(modules) if module_exist[i_mod]][0]
+		integr_time[:] = [mwr_module_dict[mod]['integration_time_per_sample'] for mod_key, module_active in module_exist.items() if module_active][0]
+		ultra_sampling_factor[:] = [mwr_module_dict[mod]['ultra_sampling_factor'] for mod_key, module_active in module_exist.items() if module_active][0]
 
 		new_nc.close()

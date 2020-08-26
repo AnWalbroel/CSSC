@@ -28,10 +28,11 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 		# identify the highest non-nan entry so we can cut the values above that highest entry:
 		# identify the lowest non-nan entry for similar reasons:
 		non_nan_idx = [idx for idx, x in np.ndenumerate(old_var) if (not np.isnan(x))]
+		non_nan_idx = np.where(~np.isnan(old_var))[0]
 		limits = np.array([non_nan_idx[0], non_nan_idx[-1]])
 		
 		temp_var = copy.deepcopy(old_var)
-		temp_var = temp_var[int(limits[0]):int(limits[1]+1)]		# will be the variable where the gaps are filled
+		temp_var = temp_var[limits[0]:limits[1]+1]		# will be the variable where the gaps are filled
 
 		interp_flag_temp = np.zeros(temp_var.shape)
 		
@@ -80,9 +81,9 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 				
 
 		# overwrite the possibly holey section:
-		new_var[int(limits[0]):int(limits[1]+1)] = temp_var
+		new_var[limits[0]:limits[1]+1] = temp_var
 		# update interp_flag
-		interp_flag[int(limits[0]):int(limits[1]+1)] = interp_flag_temp
+		interp_flag[limits[0]:limits[1]+1] = interp_flag_temp
 		
 		return new_var, interp_flag
 
@@ -181,7 +182,7 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 			new_var = new_dict[key]
 			# must be expanded to the new height grid (up to the new ceiling)
 			new_var = np.append(new_var, -999*np.ones((n_alt_new - n_alt,)) ,axis=0)
-			new_var[new_var == -999.] = float('nan')		# set the added hgt levels to nan first of all
+			new_var[np.abs(new_var + 999.) < 0.0001] = float('nan')		# set the added hgt levels to nan first of all
 
 			if not bool(new_ipflag_dict): # in case fill_gaps(...) wasn't called before this one, it's assumed that nothing has been interpolated yet.
 				new_ipflag_dict[key] = np.zeros(new_var.shape)

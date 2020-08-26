@@ -37,7 +37,6 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 		bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
 		
 
-		n_launches = 1		# number of sonde launches
 		n_alt = len(sonde_dict['Z'])		# number of height levels
 
 		# find the sonde launches that produced too many nan values so that cannot run: use the RH, T, P for that:
@@ -66,12 +65,12 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 		if ~np.isnan(sonde_dict['reference_lon']):
 			reflon = sonde_dict['reference_lon']
 		else:
-			reflon = np.asarray([sonde_dict['lon'][np.argwhere(~np.isnan(sonde_dict['lon']))[-1]] ]).flatten()
+			reflon = sonde_dict['lon'][~np.isnan(sonde_dict['lon'])][-1]
 
 		if ~np.isnan(sonde_dict['reference_lat']):
 			reflat = sonde_dict['reference_lat']
 		else:
-			reflat = np.asarray([sonde_dict['lat'][np.argwhere(~np.isnan(sonde_dict['lat']))[-1]] ]).flatten()
+			reflat = sonde_dict['lat'][~np.isnan(sonde_dict['lat'])][-1]
 
 		pamData['lon'] = np.broadcast_to(reflon, shape2d)
 		pamData['lat'] = np.broadcast_to(reflat, shape2d)
