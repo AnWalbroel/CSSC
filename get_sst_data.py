@@ -38,7 +38,7 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 
 
 
-	# Get SST data from CMC0.1deg-CMC-L4-GLOB-v3.0 via OPENDAP tool. For this we need to select 
+	# Get SST data from CMC0.1deg-CMC-L4-GLOB-v3.0 via OPENDAP tool. For this we need to select
 	# latitude and longitude boundaries as well as the required dates.
 	# path_sst = "/work/walbroel/data/sst_slice/"		# SST data will be saved here
 	# lat_bound = [20, 50.5]		# latitude boundaries in deg north (southern hemisphere with negative sign)
@@ -66,7 +66,7 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 	for dr in daterange:
 
 		print(dr)
-		
+
 		# try to load a file:
 		urllib.urlcleanup()		# clear the cache of previous urlretrieve calls
 
@@ -84,15 +84,15 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 			daynumber = str(daynumber)
 
 		outfile_name = date_formatted + "120000-CMC-L4_GHRSST-SSTfnd-CMC0.1deg-GLOB-v02.0-fv03.0.nc.nc4"
-		to_be_retrieved = "https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/GDS2/L4/GLOB/CMC/CMC0.1deg/v3/{!s}/{!s}/{!s}120000-CMC-L4_GHRSST-SSTfnd-CMC0.1deg-GLOB-v02.0-fv03.0.nc.nc4?time%5B0:1:0%5D,lat%5B{!s}%5D,lon%5B{!s}%5D,analysed_sst%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,analysis_error%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,sea_ice_fraction%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,mask%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D".format(thisyear, daynumber, date_formatted, 
-					lat_slice_formatted, lon_slice_formatted, lat_slice_formatted, lon_slice_formatted, 
-					lat_slice_formatted, lon_slice_formatted, lat_slice_formatted, lon_slice_formatted, 
+		to_be_retrieved = "https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/GDS2/L4/GLOB/CMC/CMC0.1deg/v3/{!s}/{!s}/{!s}120000-CMC-L4_GHRSST-SSTfnd-CMC0.1deg-GLOB-v02.0-fv03.0.nc.nc4?time%5B0:1:0%5D,lat%5B{!s}%5D,lon%5B{!s}%5D,analysed_sst%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,analysis_error%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,sea_ice_fraction%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,mask%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D".format(thisyear, daynumber, date_formatted,
+					lat_slice_formatted, lon_slice_formatted, lat_slice_formatted, lon_slice_formatted,
+					lat_slice_formatted, lon_slice_formatted, lat_slice_formatted, lon_slice_formatted,
 					lat_slice_formatted, lon_slice_formatted)
 
-		
+
 		try:
 			urllib.urlretrieve(to_be_retrieved, path_sst + outfile_name)
-		
+
 
 		except:	# if it couldn't be downloaded continue with next day
 			print("Could not retrieve '" + to_be_retrieved + "' from server.")

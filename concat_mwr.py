@@ -1,3 +1,4 @@
+
 import numpy as np
 import os
 import datetime
@@ -170,7 +171,7 @@ def run_concat_mwr(day_folders, mwr_out_path):
 					mwr_dict_all['azimuth_angle'][k+j] = mwr_module_dict_add['11990']['azimuth_angle'][idx_WF_add]
 
 
-			# G band: 
+			# G band:
 			if '183' in used_modules:
 				for j in range(np.count_nonzero(mwr_module_dict['183']['time'] == time_axis[k])):
 					idx_G = np.argwhere(mwr_module_dict['183']['time'] == time_axis[k])[j]
@@ -187,7 +188,7 @@ def run_concat_mwr(day_folders, mwr_out_path):
 					mwr_dict_all['elevation_angle'][k+j] = mwr_module_dict_add['183']['elevation_angle'][idx_G_add]
 					mwr_dict_all['azimuth_angle'][k+j] = mwr_module_dict_add['183']['azimuth_angle'][idx_G_add]
 
-				
+
 			# WARNING: WITH THIS SETTING, SOME MEASUREMENTS MAY BE LOST: E.g. if there are 3 measurements for time stamp 601118570 in mwr_module_dict[...][time] but 5 measurements in time
 			# stamp 601118571: then it would look like this:
 			# 601118570: TB[601118570]
@@ -211,7 +212,7 @@ def run_concat_mwr(day_folders, mwr_out_path):
 		# Save glued MWR modules into a new .nc file:
 		mwr_outname = mwr_out_path + folder_date + "_v01.nc"
 		new_nc = nc.Dataset(mwr_outname, "w", format="NETCDF4")
-		
+
 		# dimensions: time x frequency:
 		new_nc.createDimension("time", n_time)
 		new_nc.createDimension("number_frequencies", n_frq)

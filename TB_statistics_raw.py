@@ -12,13 +12,13 @@ import xarray as xr
 
 
 
-def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name, 
+def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name,
 		bias_ev_plotname, output_filename):
 
 
 	# this program shall find the mean + stddev TB from HAMP measurements from - to + 10 seconds of each dropsonde launch.
 	# Will be named: 'tb_mean' and 'tb_std'. It will also contain a variable 'tb_N' noting the number of HAMP mwr measurements
-	# in this 20 sec. time period. The measured TBs will be compared with TBs simulated from dropsondes using PAMTRA; the 
+	# in this 20 sec. time period. The measured TBs will be compared with TBs simulated from dropsondes using PAMTRA; the
 	# simulated TBs will be called 'tb_sonde'. The dropsonde release time will serve as timestamp and is saved in
 	# 'time'. Other supplemental information: 'frequency', string date(time) with description: "Date of corresponding Flight" and
 	# in units "YYYYMMDD", sonde index 'sondenumber'.
@@ -66,7 +66,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 
 
 		mwr_dict = import_mwr_nc(mwr_file)		# imports all keys of the mwr file (v01 - concatenated mwr files)
-		
+
 		nlaunches = len(pam_ds_dict['datatime'])			# should be == 1 for _raw (bc. each sonde file considered seperately)
 
 		# find mwr time indices when they match the dropsonde launch time: Should yield about 4*nlaunches indices bc. of 4 Hz measurement rate.
@@ -85,12 +85,12 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		# max_tb_stddev_temp will contain the maximum std deviation among all channels for each sonde launch
 		max_tb_stddev_temp = np.reshape(np.repeat(np.nanmax(tb_std_temp), len(frequency)), tb_std_temp.shape)
 
-		
+
 		# number of included measurements per launch:
 		tb_N = np.asarray([len(idx)])
 
 		# find the correct aircraft altitude for each launch:
-		bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + 
+		bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
 			np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
 		t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
 		drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
@@ -120,7 +120,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		cloudy_G = [np.all(tb_std_temp[k,:26] > stddev_threshold) for k in range(nlaunches)]
 		# -> if this is true for a sonde launch and cloudy_rest is NOT: only the G band channels receive a FALSE in tb_used
 
-		cloudy_rest = [np.any(tb_std_temp[k,:19] > stddev_threshold) for k in range(nlaunches)]	
+		cloudy_rest = [np.any(tb_std_temp[k,:19] > stddev_threshold) for k in range(nlaunches)]
 		# -> for the launch when this is true: tb_used gets a FALSE for frequency entries 0:19
 
 		sondenumber_temp = np.asarray([day_idx_temp])
@@ -153,7 +153,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 
 			day_index = [day_idx_temp]	# for the first day just indicates the first day's sonde launches
 
-			
+
 		else: # then the non temporary arrays have already been initialized and we can use np.concatenate
 			tb_mean = np.concatenate((tb_mean, tb_mean_temp), axis=0)
 			tb_std = np.concatenate((tb_std, tb_std_temp), axis=0)
@@ -166,7 +166,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 			sondenumber = np.concatenate((sondenumber, sondenumber_temp), axis=0)
 			sonde_lon = np.concatenate((sonde_lon, sonde_lon_temp), axis=0)
 			sonde_lat = np.concatenate((sonde_lat, sonde_lat_temp), axis=0)
-			
+
 			day_index.append(day_idx_temp)
 
 
@@ -185,18 +185,18 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 	date = [unicode(ttt.strftime('%Y%m%d')) for ttt in time]
 
 	TB_stat_DS = xr.Dataset({
-		'tb_mean': 			(['time', 'frequency'], tb_mean, 
-			{'description': "Average measured brightness temperature within -comparison_window_before/+comparison_window time around sonde release.", 
+		'tb_mean': 			(['time', 'frequency'], tb_mean,
+			{'description': "Average measured brightness temperature within -comparison_window_before/+comparison_window time around sonde release.",
 			'units': "K"}),
-		'tb_std':  			(['time', 'frequency'], tb_std, 
-			{'description': "Standard deviation of measured brightness temperature within -comparison_window_before/+comparison_window time around sonde release.", 
+		'tb_std':  			(['time', 'frequency'], tb_std,
+			{'description': "Standard deviation of measured brightness temperature within -comparison_window_before/+comparison_window time around sonde release.",
 			'units': "K"}),
 		'tb_sonde': 		(['time', 'frequency'], tb_sonde, {'description': "Simulated clear sky brightness temperature", 'units': "K"}),
-		'max_tb_std_any':	(['time', 'frequency'], max_tb_stddev, 
-			{'description': "Maximum standard deviation of measured brightness temperature of any* channel. ''any*'' means ''all''-selection for 183-band or ''KV11990''-selection for other bands.", 
+		'max_tb_std_any':	(['time', 'frequency'], max_tb_stddev,
+			{'description': "Maximum standard deviation of measured brightness temperature of any* channel. ''any*'' means ''all''-selection for 183-band or ''KV11990''-selection for other bands.",
 			'units': "K"}),
-		'tb_used': 			(['time', 'frequency'], tb_used, 
-			{'criteria': "none of: tb_cloud_threshold, count_reflective_bins_threshold, or max_bias_threshold exceeded or tb_sonde is invalid", 
+		'tb_used': 			(['time', 'frequency'], tb_used,
+			{'criteria': "none of: tb_cloud_threshold, count_reflective_bins_threshold, or max_bias_threshold exceeded or tb_sonde is invalid",
 			'description': "Flag that is True, if sonde shall be used in bias calculation", 'type': "bool"}),
 		'date': 			(['time'], date, {'description': "Date of corresponding Flight", 'units': "YYYYMMDD"}),
 		'obsheight':		(['time'], obsheight_save, {'description': "Altitude of simulated brightness temperature", 'units': "m"}),
@@ -204,8 +204,8 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		'tb_N': 			(tb_N),
 		'longitude':		(['time'], sonde_lon, {'description': "Longitude of sonde launch", 'units': "degree east"}),
 		'latitude':			(['time'], sonde_lat, {'description': "Latitude of sonde launch", 'units': "degree north"}),
-		}, 
-		coords={'time': (['time'], time, {'description': "timestamp or seconds since 2020-01-01 00:00:00"}), 
+		},
+		coords={'time': (['time'], time, {'description': "timestamp or seconds since 2020-01-01 00:00:00"}),
 			'frequency': (['frequency'], frequency, {'description': "channel frequency", 'units': "GHz"})})
 
 
@@ -213,7 +213,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 	# Set global attributes to dataset:
 	# Two ways to do it: First one is here: But then the attribute structure doesn't look as well sorted as if you'd add each attr. step by step.
 	# # # # TB_stat_DS.attrs = {
-		# # # # 'description': ("EUREC4A campaign HAMP MWR vs. pamtra simulated dropsondes: " + 
+		# # # # 'description': ("EUREC4A campaign HAMP MWR vs. pamtra simulated dropsondes: " +
 						# # # # "Includes 20 seconds averaged TBs (and std deviation) from MWR and the respective pamtra simulated dropsonde TBs."),
 		# # # # 'history': "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
 		# # # # 'author': "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)",
@@ -222,14 +222,14 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		# # # # 'comparison_window_before': 10,
 		# # # # 'comparison_window_before_description': "Time delta (seconds) before the drop release that is used for comparison of each sonde.",
 		# # # # 'tb_cloud_threshold': stddev_threshold,
-		# # # # 'tb_cloud_threshold_description': ("A TB measurement is regarded cloudy if any* tb_std exceeded this value. " + 
+		# # # # 'tb_cloud_threshold_description': ("A TB measurement is regarded cloudy if any* tb_std exceeded this value. " +
 										   # # # # "''any*'' means ''all''-selection for 183-band or ''any''-selection for other bands."),
 		# # # # 'max_bias_threshold': 20,
 		# # # # 'max_bias_threshold_description': "A TB measurement is regarded cloudy if the absolute difference between tb_sonde and tb_mean is larger than this value."
 		# # # # }
 
 	# The other option:
-	TB_stat_DS.attrs['description'] = ("HAMP MWR vs. pamtra simulated dropsondes: " + 
+	TB_stat_DS.attrs['description'] = ("HAMP MWR vs. pamtra simulated dropsondes: " +
 		"Includes 20 seconds averaged TBs (and std deviation) from MWR and the respective pamtra simulated dropsonde TBs.")
 	TB_stat_DS.attrs['history'] = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 	TB_stat_DS.attrs['author'] = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
@@ -238,7 +238,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 	TB_stat_DS.attrs['comparison_window_before'] = 10
 	TB_stat_DS.attrs['comparison_window_before_description'] = "Time delta (seconds) before the drop release that is used for comparison of each sonde."
 	TB_stat_DS.attrs['tb_cloud_threshold'] = stddev_threshold
-	TB_stat_DS.attrs['tb_cloud_threshold_description'] = ("A TB measurement is regarded cloudy if any* tb_std exceeded this value. " + 
+	TB_stat_DS.attrs['tb_cloud_threshold_description'] = ("A TB measurement is regarded cloudy if any* tb_std exceeded this value. " +
 		"''any*'' means ''all''-selection for 183-band or ''any''-selection for other bands.")
 	TB_stat_DS.attrs['max_bias_threshold'] = bias_threshold
 	TB_stat_DS.attrs['max_bias_threshold_description'] = "A TB measurement is regarded cloudy if the absolute difference between tb_sonde and tb_mean is larger than this value."
@@ -350,7 +350,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 	frq22_posi = ax2[22].get_position()	# need x coordinates of this one
 
 
-	# add legend to the "26th" subplot: get the handles from just one axis (it suffices because each axis at least theoretically includes a plot) -> 
+	# add legend to the "26th" subplot: get the handles from just one axis (it suffices because each axis at least theoretically includes a plot) ->
 	# enough to create a legend: choose ax2[25] because it also contains the auxiliary labels created a few lines above:
 	leg_handles, leg_labels = ax2[25].get_legend_handles_labels()
 	i_am = ax2[26].legend(handles=leg_handles, labels=leg_labels, loc='upper center', bbox_to_anchor=(0.5, 0.95), fontsize=4.0, title="Year-MM-DD, #sondes")
@@ -399,7 +399,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		day_range.append([when_new_day[-1], len(day_index)-1])	# until len(...)-1 because of python indexing
 		# day_range[0] now tells you the first index of that day (day_range[0][0]) and the last index of that day (day_range[0][1])
 		# of course, for python you have to address day_range[0][1]+1 to actually catch the whole day
-		
+
 		dt_date = [datetime.datetime.strptime(work_date[dd], "%Y%m%d") for dd in when_new_day]		# datetime axis for each day (found via when_new_day)
 		TB_bias_date = np.asarray([np.nanmean(tb_mean_cf[d_i[0]:d_i[1]+1,k] - tb_sonde_cf[d_i[0]:d_i[1]+1,k]) for d_i in day_range])
 
@@ -454,7 +454,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 			ax3[k].set_ylabel(r"Bias$_{\mathrm{daily}}$ [K]", fontsize=4.5, labelpad=1.0)		# add  - Bias for relative bias
 
 	# small legend @ ax3[25] location:
-	# add legend to the "25th" subplot: get the handles from just one axis (it suffices because each axis at least theoretically includes a plot) -> 
+	# add legend to the "25th" subplot: get the handles from just one axis (it suffices because each axis at least theoretically includes a plot) ->
 	# enough to create a legend: choose ax3[25] because it also contains the auxiliary labels created a few lines above:
 	leg_handles, leg_labels = ax3[24].get_legend_handles_labels()
 	i_am = ax3[25].legend(handles=leg_handles, labels=leg_labels, loc='upper center', bbox_to_anchor=(0.5, 0.95), fontsize=4.0)

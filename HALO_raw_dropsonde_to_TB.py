@@ -35,7 +35,7 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 		bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
 		bah_dict['time'] = np.rint(bah_dict['time']).astype(float)		# must be done to avoid small fractions of seconds
 		bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
-		
+
 
 		n_alt = len(sonde_dict['Z'])		# number of height levels
 
@@ -89,7 +89,7 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 		pamData['sfc_refl'] = np.chararray(shape2d)
 		pamData['sfc_refl'][:] = 'F'
 		pamData['sfc_refl'][pamData['sfc_type'] == 1] = 'S'
-		
+
 		pamData['obs_height'] = np.broadcast_to(obs_height, shape2d + [len(obs_height), ])			# must be changed to the actual top of soundings (or mwr altitude / bahamas altitude)
 
 		# meteorolog. surface information:
@@ -132,7 +132,7 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 			   ('iwc_q', -99.0, -1, -99.0, 130.0, 3.0, 0.684, 2.0, 3, 1, 'mono_cosmo_ice', -99.0, -99.0, -99.0, -99.0, -99.0, -99.0, 'mie-sphere', 'heymsfield10_particles', -99.0),
 			   ('rwc_q', -99.0, 1, -99.0, -99.0, -99.0, -99.0, -99.0, 3, 50, 'exp', -99.0, -99.0, 8000000.0, -99.0, 0.00012, 0.006, 'mie-sphere', 'khvorostyanov01_drops', -99.0),
 			   ('swc_q', -99.0, -1, -99.0, 0.038, 2.0, 0.3971, 1.88, 3, 50, 'exp_cosmo_snow', -99.0, -99.0, -99.0, -99.0, 5.1e-11, 0.02, 'mie-sphere', 'heymsfield10_particles', -99.0),
-			   ('gwc_q', -99.0, -1, -99.0, 169.6, 3.1, -99.0, -99.0, 3, 50, 'exp', -99.0, -99.0, 4000000.0, -99.0, 1e-10, 0.01, 'mie-sphere', 'khvorostyanov01_spheres', -99.0)], 
+			   ('gwc_q', -99.0, -1, -99.0, 169.6, 3.1, -99.0, -99.0, 3, 50, 'exp', -99.0, -99.0, 4000000.0, -99.0, 1e-10, 0.01, 'mie-sphere', 'khvorostyanov01_spheres', -99.0)],
 			  dtype=[('hydro_name', 'S15'), ('as_ratio', '<f8'), ('liq_ice', '<i8'), ('rho_ms', '<f8'), ('a_ms', '<f8'), ('b_ms', '<f8'), ('alpha_as', '<f8'), ('beta_as', '<f8'), ('moment_in', '<i8'), ('nbin', '<i8'), ('dist_name', 'S15'), ('p_1', '<f8'), ('p_2', '<f8'), ('p_3', '<f8'), ('p_4', '<f8'), ('d_1', '<f8'), ('d_2', '<f8'), ('scat_name', 'S15'), ('vel_size_mod', 'S30'), ('canting', '<f8')]
 			  )
 		for hyd in descriptorFile: pam.df.addHydrometeor(hyd)
@@ -148,7 +148,7 @@ def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_da
 		filename_out = pam_out_path + "pamtra_" + filename_in.replace(path_halo_dropsonde, '')
 		pam.writeResultsToNetCDF(filename_out, xarrayCompatibleOutput=True, ncCompression=True)
 
-		
+
 		# # # # # Save the dropsonde launch number:
 		# # # # sonde_number_filename = "/work/walbroel/data/" + "sonde_number_" + filename_in[-15:-3]
 		# # # # np.save(sonde_number_filename, whichsonde)

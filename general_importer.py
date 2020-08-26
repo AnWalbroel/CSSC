@@ -12,10 +12,10 @@ import pdb
 # All meteorological variables will be converted to SI units
 def readNC(filename):
 	file_nc = nc.Dataset(filename)
-	
-	# temp in K; press in Pa; relhum in %, launch_time in unixtime (must be treated specially, use its UNITS), 
-	# height in m, lat in deg north, lon in deg east, u (eastward: > 0) & v (northward: > 0) in m/s, w (vertical wind: upward: > 0), 
-	# 
+
+	# temp in K; press in Pa; relhum in %, launch_time in unixtime (must be treated specially, use its UNITS),
+	# height in m, lat in deg north, lon in deg east, u (eastward: > 0) & v (northward: > 0) in m/s, w (vertical wind: upward: > 0),
+	#
 	dropsonde_dict = {\
 	'tdry': np.asarray(file_nc.variables['tdry']) + 273.15, \
 	'pres': np.asarray(file_nc.variables['pres'])*100, \
@@ -28,7 +28,7 @@ def readNC(filename):
 	'v_wind': np.asarray(file_nc.variables['v_wind']), \
 	'w_wind': np.asarray(file_nc.variables['w_wind']) \
 	}
-	
+
 	# handling the launch time: converting it to unixtime: seconds since 2020-01-01 00:00:00 UTC
 	time_base = dt.datetime.strptime(file_nc.variables['launch_time'].units[14:], "%Y-%m-%d %H:%M:%S") # time base given in the units attribute
 	dropsonde_dict['launch_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
@@ -93,13 +93,13 @@ def readrawNCraw(filename, verbose=False):
 
 		if hasattr(nc_var, 'missing_value'):
 			dropsonde_dict['fillValues'][nc_keys] = nc_var.missing_value
-			
+
 			# type of the nc_var:
 			ncvar_type = type(dropsonde_dict[nc_keys][0])
 
 			# find where the current variable has missing values and set them to nan:
 			missing_idx = np.argwhere(dropsonde_dict[nc_keys] == dropsonde_dict['fillValues'][nc_keys])
-			
+
 			if ((ncvar_type == np.float32) or (ncvar_type == np.float64)):
 				dropsonde_dict[nc_keys][missing_idx] = float('nan')
 
@@ -147,13 +147,13 @@ def readNCrawJOANNE2(filename, verbose=False):
 
 		if hasattr(nc_var, '_FillValue'):
 			dropsonde_dict['fillValues'][nc_keys] = nc_var._FillValue
-			
+
 			# type of the nc_var:
 			ncvar_type = type(dropsonde_dict[nc_keys][0])
 
 			# find where the current variable has missing values and set them to nan:
 			missing_idx = np.argwhere(dropsonde_dict[nc_keys] == dropsonde_dict['fillValues'][nc_keys])
-			
+
 			if ((ncvar_type == np.float32) or (ncvar_type == np.float64)):
 				dropsonde_dict[nc_keys][missing_idx] = float('nan')
 
@@ -199,7 +199,7 @@ def readNCraw_V01(filename, verbose=False):
 			elif nc_var.units == 'gram/kg':
 				dropsonde_dict[nc_keys] = dropsonde_dict[nc_keys]/1000
 				if verbose: print("From g/kg to kg/kg: " + str(nc_keys))
-		
+
 
 	if verbose: print("\n")
 
@@ -216,7 +216,7 @@ def import_GHRSST(filename, keys=''):	# imports SST data from GHRSST data base. 
 	for key in keys:
 		if key == 'lon' or key == 'lat':
 			GHRSST_dict[key] = np.asarray(file_nc.variables[key]).astype(float)		# because lat, lon are single float; will be converted to double float
-		
+
 		elif key == 'analysed_sst':	# just renaming the array because analysed_sst sounds too fancy
 			GHRSST_dict['SST'] = np.asarray(file_nc.variables[key])
 
@@ -263,7 +263,7 @@ def import_mwr_nc(filename, keys='', verbose=False): # imports stuff from the co
 
 
 def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports stuff from PAMTRA simualted dropsondes
-	# keys to be imported may be assigned. Otherwise all variables will be read in. 
+	# keys to be imported may be assigned. Otherwise all variables will be read in.
 	# withDSBA decides whether or not the double side bands (F and G band) will be averaged. If True: double side band averaging will be performed.
 
 	DSpam_dict = dict()
@@ -284,9 +284,9 @@ def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports s
 		if DSpam_dict[key].shape == (1,grid_y):	# 2D arrays
 			DSpam_dict[key] = DSpam_dict[key][0,:]
 		if DSpam_dict[key].shape == (1,grid_y,grid_z):	# 3D arrays
-			DSpam_dict[key] = DSpam_dict[key][0,:,:]			
+			DSpam_dict[key] = DSpam_dict[key][0,:,:]
 
-		# # # if key == 'datatime':	# convert to seconds since 2020-01-01 00:00:00	# not necessary because the 
+		# # # if key == 'datatime':	# convert to seconds since 2020-01-01 00:00:00	# not necessary because the
 		# # # time stamp of dropsondes was already in sec since 2020-01-01
 			# # # DSpam_dict[key] = (dt.datetime(1970,1,1) - dt.datetime(2020,1,1)).total_seconds() + DSpam_dict[key]
 
@@ -302,7 +302,7 @@ def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports s
 		if withDSBA:	# double side band averaging (because HAMP MWR also does this)
 			TB_old = DSpam_dict['tb']
 			TB_new = copy.deepcopy(TB_old)
-			
+
 			# F band:
 			TB_new[...,15] = (TB_old[...,18] + TB_old[...,19])/2
 			TB_new[...,16] = (TB_old[...,17] + TB_old[...,20])/2
@@ -332,7 +332,7 @@ def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports s
 
 
 def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# imports stuff from PAMTRA simualted dropsondes
-	# keys to be imported may be assigned. Otherwise all variables will be read in. 
+	# keys to be imported may be assigned. Otherwise all variables will be read in.
 	# withDSBA decides whether or not the double side bands (F and G band) will be averaged. If True: double side band averaging will be performed.
 
 	# Create new xarray DATASET from netcdf file:
@@ -340,7 +340,7 @@ def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# import
 
 	if keys == '':
 		keys = DSpam_ds.keys()
-	
+
 	print("Importing variables " + str(keys) + " from file '" + filename + "'.\n")
 
 
@@ -360,10 +360,10 @@ def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# import
 		if alldims:
 			# datatime = DSpam_ds.datatime			# NECESSARY IF datatime is a numpy.datetime64 object
 			DSpam_ds = DSpam_ds.isel(angles=0).mean('passive_polarisation')
-				# -> removes the redundant dimensions from the whole data set at once 
+				# -> removes the redundant dimensions from the whole data set at once
 				# (but angles is still accessible if you want to know which angle was used)
 			# DSpam_ds['datatime'] = datatime		# NECESSARY IF datatime is a numpy.datetime64 object
-			
+
 		else:
 			# # datatime = DSpam_ds.datatime		# NECESSARY IF datatime is a numpy.datetime64 object
 			DSpam_ds = DSpam_ds.isel(angles=0, outlevel=0).mean('passive_polarisation')
@@ -404,9 +404,9 @@ def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# import
 			DSpam_ds['tb'].loc[dict(frequency=frq_dsba)] = TB_new
 
 
-			# # # # # #Another option how to replace the TBs: 
+			# # # # # #Another option how to replace the TBs:
 			# # # # # # generate new DataArray and replace 'tb' in the DataSet DSpam_ds:
-			# # # # # TB_new_DA = xr.DataArray(TB_new.values, 
+			# # # # # TB_new_DA = xr.DataArray(TB_new.values,
 				# # # # # dims=('grid_y', 'outlevel', 'frequency_dsba'),
 				# # # # # coords={'grid_y': DSpam_ds.coords['grid_y'].values, 'outlevel': DSpam_ds.coords['outlevel'].values, 'frequency_dsba': frq_dsba})
 
@@ -414,7 +414,7 @@ def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# import
 
 			# # # # # # Remove the non-dsba frequency:
 			# # # # # DSpam_ds = DSpam_ds.drop('frequency')
-			
+
 			# # # # # # RENAME:
 			# # # # # DSpam_ds = DSpam_ds.rename({'frequency_dsba': 'frequency'})
 
@@ -422,7 +422,7 @@ def import_DSpam_nc_XR(filename, keys='', withDSBA=True, alldims=True):	# import
 
 
 def import_TB_stat(filename, keys=''):	# import variables saved for the TB statistics:
-	# keys to be imported may be assigned. Otherwise all variables will be read in. 
+	# keys to be imported may be assigned. Otherwise all variables will be read in.
 
 	TB_stat_dict = dict()
 	file_nc = nc.Dataset(filename)
@@ -445,16 +445,16 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 
 	headersize = 4		# 4 lines: line 2 and 3: for variable names; line 4: units
 	footersize = 19
-	
+
 	fileHandler = open(filename, 'r')
 	listOfLines = list()				# will contain all lines as list
-	
+
 	for line in fileHandler:
 		current_line = line.strip().split(' ')		# split by spaces ... but there are sometimes more than one spaces. So, remove all of them
 
 		while '' in current_line:
 			current_line.remove('')
-		
+
 		listOfLines.append(current_line)
 
 	# define the footer (end of file information):
@@ -467,7 +467,7 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 	sonde_ID = float(listOfLines[headersize+1][2])
 	launch_time = (dt.datetime.strptime(footer[3][5] + footer[3][6], "%Y-%m-%d,%H:%M:%S") - dt.datetime(2020,1,1)).total_seconds()
 	launch_time_string = dt.datetime.strptime(footer[3][5] + footer[3][6], "%Y-%m-%d,%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-	
+
 	# pre-launch meteorological conditions:
 	pre_launch = {
 	'T0': float(footer[10][7]),		# temperature in deg C
@@ -489,7 +489,7 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 	'aircraft_alt': float(footer[12][9]), 	# aircraft altitude in m
 	'aircraft_alt_units': footer[12][10][:-1]
 	}
-	
+
 	# check for non-existing pre-launch values:
 	for prekey in pre_launch.keys():
 		if pre_launch[prekey] == -999.0:
@@ -562,15 +562,15 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 			data_dict[varname] = np.asarray([data_block[k][loc] for k in range(ndata)])
 
 		else:
-			
+
 			data_dict[varname] = np.asarray([float(data_block[k][loc]) for k in range(ndata)])
-			
+
 			# find indices of non-existent measurements:
 			nan_idx = np.argwhere(data_dict[varname] == fillVal_dict[varname])
 			data_dict[varname][nan_idx] = float('nan')
 
 	# glue date and time together and convert it to unixtime (seconds since 2020-01-01 00:00:00 UTC):
-	data_dict['sonde_time'] = np.asarray([(dt.datetime.strptime(date + " " + time + "0000", "%y%m%d %H%M%S.%f") - 
+	data_dict['sonde_time'] = np.asarray([(dt.datetime.strptime(date + " " + time + "0000", "%y%m%d %H%M%S.%f") -
 		dt.datetime(2020,1,1)).total_seconds() for date, time in zip(data_dict['UTC_Date'], data_dict['UTC_Time'])])
 
 

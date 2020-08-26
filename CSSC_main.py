@@ -16,13 +16,13 @@ from TB_statistics_raw import run_TB_statistics_raw
 '''
 	This is the control room for the Clear Sky Sonde Comparison (CSSC) code package where
 	you assign the required variables (mostly paths of data).
-	More information about each to be manually assigned variable can be found in 
+	More information about each to be manually assigned variable can be found in
 	'clear_sky_sonde_comparison_README.txt'.
 '''
 
 
-# # # # # # 	1. "concat_mwr.py": Due to changing conventions how the MWR data is saved you have to 
-# # # # # # 	manually edit some lines in "concat_mwr.py" (marked with "##################" and 
+# # # # # # 	1. "concat_mwr.py": Due to changing conventions how the MWR data is saved you have to
+# # # # # # 	manually edit some lines in "concat_mwr.py" (marked with "##################" and
 # # # # # # 	explained in the README file).
 # # # # # mwr_base_path = "/data/hamp/flights/EUREC4A/"
 # # # # # day_folders = sorted(glob.glob(mwr_base_path + "*"))[0:17]	# all day folders will be saved here
@@ -42,7 +42,7 @@ from TB_statistics_raw import run_TB_statistics_raw
 
 
 #	3. Either manually select and download the SST data from the website given in
-#	the README file or assign latitude and longitude boundaries and required dates 
+#	the README file or assign latitude and longitude boundaries and required dates
 #	for an automated download:
 path_sst = "/work/walbroel/CSSC_test/sst_slice/"
 lat_bound = [0, 40]
@@ -75,5 +75,5 @@ download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date)
 # # # # # bias_ev_plotname = "TB_abs_biasevolution"
 # # # # # output_filename = "clear_sky_sonde_comparison_ALL"
 # # # # # print("Running TB_statistics_raw.py ..........\n")
-# # # # # run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name, 
+# # # # # run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name,
 		# # # # # bias_ev_plotname, output_filename)
