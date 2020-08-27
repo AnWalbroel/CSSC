@@ -87,12 +87,7 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 		date_formatted = dr.strftime("%Y%m%d")
 		lat_slice_formatted = "%d:1:%d"%(lat_slice[0], lat_slice[1])		# e.g. 450:1:900
 		lon_slice_formatted = "%d:1:%d"%(lon_slice[0], lon_slice[1])		# e.g. 1140:1:1400
-		if daynumber < 10:
-			daynumber = "00" + str(daynumber)	# add two more 0 in front of it so that e.g. number 6 will be 006
-		elif (daynumber >= 10) & (daynumber < 100):
-			daynumber = "0" + str(daynumber)	# add one 0 in front of it
-		else:
-			daynumber = str(daynumber)
+		daynumber = "%03d" % daynumber
 
 		outfile_name = date_formatted + "120000-CMC-L4_GHRSST-SSTfnd-CMC0.1deg-GLOB-v02.0-fv03.0.nc.nc4"
 		to_be_retrieved = "https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/GDS2/L4/GLOB/CMC/CMC0.1deg/v3/{!s}/{!s}/{!s}120000-CMC-L4_GHRSST-SSTfnd-CMC0.1deg-GLOB-v02.0-fv03.0.nc.nc4?time%5B0:1:0%5D,lat%5B{!s}%5D,lon%5B{!s}%5D,analysed_sst%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,analysis_error%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,sea_ice_fraction%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D,mask%5B0:1:0%5D%5B{!s}%5D%5B{!s}%5D".format(thisyear, daynumber, date_formatted,
