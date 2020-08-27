@@ -362,7 +362,7 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 
 
 			# find the first non-nan entry
-			idx = np.argwhere(~np.isnan(new_var[:]))[0]
+			idx = np.argwhere(~np.isnan(new_var[:]))[0][0]
 
 			if alt[idx] < lim:
 				sfc_gap = np.arange(0,idx)
