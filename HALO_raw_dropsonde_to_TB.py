@@ -9,9 +9,15 @@ import matplotlib.pyplot as plt
 
 
 
-def run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_data, pam_out_path, pamtra_datadir):
+def run_HALO_raw_dropsonde_to_TB(
+	path_halo_dropsonde,
+	path_sst_data,
+	path_BAH_data,
+	pam_out_path,
+):
 
-	os.environ['PAMTRA_DATADIR'] = pamtra_datadir
+	if 'PAMTRA_DATADIR' not in os.environ:
+		os.environ['PAMTRA_DATADIR'] = "" # actual path is not required, but the variable has to be defined.
 	import pyPamtra
 
 	HALO_sondes_NC = sorted(glob.glob(path_halo_dropsonde + "*v01.nc"))
