@@ -12,9 +12,27 @@ import matplotlib.pyplot as plt
 def run_HALO_raw_dropsonde_to_TB(
 	path_halo_dropsonde,
 	path_sst_data,
-	path_BAH_data,
 	pam_out_path,
+	obs_height='BAHAMAS',
+	path_BAH_data=None,
 ):
+	"""Run forward simulation of TB using interpolated dropsondes.
+
+	Parameters
+	----------
+	path_halo_dropsonde : str
+		Path of interpolated Dropsonde netCDF files.
+	path_sst_data : str
+		Path of SST data netCDF files.
+	pam_out_path : str
+		Output path
+	obs_height : number or str
+		If a number is given use this as assumed aircraft altitude.
+		If 'BAHAMAS' is given get altitude from BAHAMAS files.
+			BAHAMAS files have to be in unified netCDF format and `path_BAH_data' has to be set.
+	path_BAH_data : str, optional
+		Path of BAHAMAS data in unified netCDF files. Required if obs_height == 'BAHAMAS'.
+	"""
 
 	if 'PAMTRA_DATADIR' not in os.environ:
 		os.environ['PAMTRA_DATADIR'] = "" # actual path is not required, but the variable has to be defined.
@@ -22,7 +40,19 @@ def run_HALO_raw_dropsonde_to_TB(
 
 	HALO_sondes_NC = sorted(glob.glob(path_halo_dropsonde + "*v01.nc"))
 	SST_files_NC = sorted(glob.glob(path_sst_data + "*.nc.nc4"))
-	BAH_files_NC = sorted(glob.glob(path_BAH_data + "bahamas*.nc"))
+
+	if isinstance(obs_height, str):
+		if obs_height == 'BAHAMAS':
+			if not isinstance(path_BAH_data, str):
+				raise ValueError("path_BAH_data is required as string argument when obs_height == 'BAHAMAS'")
+			BAH_files_NC = sorted(glob.glob(path_BAH_data + "bahamas*.nc"))
+			if len(BAH_files_NC) == 0:
+				raise RuntimeError("Could not find any BAHAMAS data in `%s'"  % (path_BAH_data + "bahamas*.nc"))
+		else:
+			raise ValueError("Unknown obs_height `%s'" % obs_height)
+	else:
+		BAH_files_NC = []
+		obs_height = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
 
 	for filename_in in HALO_sondes_NC:
 		# Import sonde data:
@@ -36,18 +66,27 @@ def run_HALO_raw_dropsonde_to_TB(
 		sst_keys = ['time', 'lat', 'lon', 'analysed_sst', 'analysis_error']
 		sst_dict = import_GHRSST(sst_filename[0], sst_keys)
 
-		# Import altitude and time data from BAHAMAS:
-		bah_filename = [bah_file for idx, bah_file in enumerate(BAH_files_NC) if dropsonde_date in bah_file]
-		bah_keys = ['time', 'altitude']
-		bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
-		bah_dict['time'] = np.rint(bah_dict['time']).astype(float)		# must be done to avoid small fractions of seconds
-		bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
+		if BAH_files_NC:
+			# Import altitude and time data from BAHAMAS:
+			bah_filename = [bah_file for bah_file in BAH_files_NC if dropsonde_date in bah_file]
+			if len(bah_filename) == 0:
+				raise RuntimeError("Could not find any BAHAMAS data for date `%s'" % dropsonde_date)
+			bah_keys = ['time', 'altitude']
+			bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
+			bah_dict['time'] = np.rint(bah_dict['time']).astype(float)		# must be done to avoid small fractions of seconds
+			bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
 
 
 		n_alt = len(sonde_dict['Z'])		# number of height levels
 
 		# find the sonde launches that produced too many nan values so that cannot run: use the RH, T, P for that:
 		if not (np.all([~np.isnan(sonde_dict['T']), ~np.isnan(sonde_dict['P']), ~np.isnan(sonde_dict['RH'])])):
+			continue
+
+		if np.any(np.isnan(sonde_dict['Z'])): # sometimes, even Z can contain nan, when not using BAHAMAS
+			continue
+
+		if np.isnan(sonde_dict['u_wind'][1] + sonde_dict['v_wind'][1]):
 			continue
 
 		# assert np.all(~np.isnan(sonde_dict['RH']))
@@ -85,9 +124,10 @@ def run_HALO_raw_dropsonde_to_TB(
 
 		# to get the obs_height: average BAHAMAS altitude over +/- 10 seconds around launch_time:
 		# find time index of the sonde launches:
-		bah_launch_idx = np.asarray([np.argwhere(bah_dict['time'] == pamData['timestamp'][0])]).flatten()		# had some dimensions too many -> flattened
-		drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in bah_launch_idx])/100)*100
-		obs_height = drop_alt
+		if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
+			bah_launch_idx = np.asarray([np.argwhere(bah_dict['time'] == pamData['timestamp'][0])]).flatten()		# had some dimensions too many -> flattened
+			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in bah_launch_idx])/100)*100
+			obs_height = drop_alt
 
 		print(dropsonde_date + "\n")
 

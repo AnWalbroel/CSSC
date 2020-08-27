@@ -13,9 +13,27 @@ import xarray as xr
 
 
 
-def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name,
-		bias_ev_plotname, output_filename):
-
+def run_TB_statistics_raw(
+	path_mwr,
+	path_pam_ds,
+	out_path,
+	plot_path,
+	scatterplot_name,
+	bias_ev_plotname,
+	output_filename,
+	obs_height='BAHAMAS',
+	path_BAH_data=None,
+):
+	"""
+	Parameters
+	----------
+	obs_height : number or str
+		If a number is given use this as assumed aircraft altitude.
+		If 'BAHAMAS' is given get altitude from BAHAMAS files.
+			BAHAMAS files have to be in unified netCDF format and `path_BAH_data' has to be set.
+	path_BAH_data : str, optional
+		Path of BAHAMAS data in unified netCDF files. Required if obs_height == 'BAHAMAS'.
+	"""
 
 	# this program shall find the mean + stddev TB from HAMP measurements from - to + 10 seconds of each dropsonde launch.
 	# Will be named: 'tb_mean' and 'tb_std'. It will also contain a variable 'tb_N' noting the number of HAMP mwr measurements
@@ -29,7 +47,19 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 
 	MWR_ncfiles = sorted(glob.glob(path_mwr + "*.nc"))
 	PAM_ds_ncfiles = sorted(glob.glob(path_pam_ds + "*.nc"))
-	BAH_files_NC = sorted(glob.glob(path_BAH_data + "bahamas*.nc"))
+
+	if isinstance(obs_height, str):
+		if obs_height == 'BAHAMAS':
+			if not isinstance(path_BAH_data, str):
+				raise ValueError("path_BAH_data is required as string argument when obs_height == 'BAHAMAS'")
+			BAH_files_NC = sorted(glob.glob(path_BAH_data + "bahamas*.nc"))
+			if len(BAH_files_NC) == 0:
+				raise RuntimeError("Could not find any BAHAMAS data in `%s'"  % (path_BAH_data + "bahamas*.nc"))
+		else:
+			raise ValueError("Unknown obs_height `%s'" % obs_height)
+	else:
+		BAH_files_NC = []
+		obs_height = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
 
 
 	# cycle through all files (days) where a dropsonde (ds) could be pamtra simulated
@@ -58,12 +88,13 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 
 		# Import the correct files (of same day):
 		# finding the right file via scanning with for: ...
-		mwr_file = [mwrfile for idx, mwrfile in enumerate(MWR_ncfiles) if work_date_temp[2:] in mwrfile][0]
+		mwr_file = [mwrfile for mwrfile in MWR_ncfiles if work_date_temp[2:] in mwrfile][0]
 
 
 		bah_keys = ['time', 'altitude']		# keys for BAHAMAS data import
-		bah_filename = [bah_file for idx, bah_file in enumerate(BAH_files_NC) if work_date_temp in bah_file][0]
-		bah_dict = import_BAHAMAS_unified(bah_filename, bah_keys)
+		bah_filenames = [bah_file for bah_file in BAH_files_NC if work_date_temp in bah_file]
+		if bah_filenames:
+			bah_dict = import_BAHAMAS_unified(bah_filenames[0], bah_keys)
 
 
 		mwr_dict = import_mwr_nc(mwr_file)		# imports all keys of the mwr file (v01 - concatenated mwr files)
@@ -91,13 +122,15 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 		tb_N = np.asarray([len(idx)])
 
 		# find the correct aircraft altitude for each launch:
-		bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
-			np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
-		t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
-		drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
+		if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
+			bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
+				np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
+			t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
+			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
+			obs_height = drop_alt
 
 		# select correct pamtra outlevel:
-		outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in drop_alt]).flatten()
+		outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in obs_height]).flatten()
 
 		# positional information:
 		sonde_lon_temp = pam_ds_dict['longitude']
@@ -147,7 +180,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 			tb_used = np.reshape(tb_used_temp, (1, len(frequency)))
 			work_date = [work_date_temp]
 			time = time_temp
-			obsheight_save = drop_alt
+			obsheight_save = obs_height
 			sondenumber = sondenumber_temp
 			sonde_lon = sonde_lon_temp
 			sonde_lat = sonde_lat_temp
@@ -163,7 +196,7 @@ def run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_p
 			tb_used = np.concatenate((tb_used, tb_used_temp), axis=0)
 			work_date.append(work_date_temp)
 			time = np.concatenate((time, time_temp), axis=0)
-			obsheight_save = np.concatenate((obsheight_save, drop_alt), axis=0)
+			obsheight_save = np.concatenate((obsheight_save, obs_height), axis=0)
 			sondenumber = np.concatenate((sondenumber, sondenumber_temp), axis=0)
 			sonde_lon = np.concatenate((sonde_lon, sonde_lon_temp), axis=0)
 			sonde_lat = np.concatenate((sonde_lat, sonde_lat_temp), axis=0)

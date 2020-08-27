@@ -528,6 +528,7 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 			nc_var.description  = attributes[1][at_idx]
 
 		new_nc.close()
+		print("Output: ", out_filename)
 
 
 
@@ -548,6 +549,7 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 	failed_sondes = []
 	stuck_sondes = []
 
+	print('Found %d sondes.' % len(HALO_sondes_NC))
 
 	for sonde_nc in HALO_sondes_NC:
 
@@ -556,7 +558,7 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 		launch_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_seconds).strftime("%Y-%m-%d")	# time delta required
 		dropsonde_date = (datetime.datetime.strptime(launch_date, "%Y-%m-%d")).strftime("%Y%m%d")	# date displayed in the filename ... comfy way to find the right BAHAMAS data for std_extrapol
 		print("########## Day: " + datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_seconds).strftime("%Y-%m-%d %H:%M:%S") + " ##########\n")
-		print(sonde_nc)
+		print("Input: ", sonde_nc)
 
 
 		# add another condition that checks if e.g. nearly no measurements exist at all (for T, P and RH):
@@ -666,7 +668,10 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 		# Need bahamas file for extrapolation limit:
 		# It's also regridded to JOANNE grid (10 m resolution) in std_extrapol
 		bah_filename = [bah_file for idx, bah_file in enumerate(BAH_files_NC) if dropsonde_date in bah_file]
-		sonde_dict, sonde_dict['ipflag'] = std_extrapol(sonde_dict, ill_keys, bah_filename, sonde_dict['ipflag'])
+		if bah_filename:
+			sonde_dict, sonde_dict['ipflag'] = std_extrapol(sonde_dict, ill_keys, bah_filename, sonde_dict['ipflag'])
+		else:
+			print("Could not find any BAHAMAS data to extrapolate.")
 
 
 		# find outliers and mark them (as nan): afterwards fill them again
