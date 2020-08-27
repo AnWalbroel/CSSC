@@ -5,6 +5,16 @@ import datetime as dt
 import pandas as pd
 import pdb
 
+# in python3, .urlretrieve() and .urlcleanup() are part of urllib.request,
+# while in python2 they were directly under urllib.
+try: # is it python3?
+	request = urllib.request
+	# however, documentation says:
+	#   "The following functions and classes are ported from the Python 2 module urllib (as opposed to urllib2).
+	#   They might become deprecated at some point in the future.""
+except AttributeError:
+	request = urllib # try python2 way
+
 
 
 def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
@@ -69,7 +79,7 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 		print(dr)
 
 		# try to load a file:
-		urllib.urlcleanup()		# clear the cache of previous urlretrieve calls
+		request.urlcleanup()		# clear the cache of previous urlretrieve calls
 
 		# define some shortcuts:
 		daynumber = dr.dayofyear	# day number of the specified year
@@ -92,7 +102,7 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 
 
 		try:
-			urllib.urlretrieve(to_be_retrieved, path_sst + outfile_name)
+			request.urlretrieve(to_be_retrieved, path_sst + outfile_name)
 
 
 		except:	# if it couldn't be downloaded continue with next day
