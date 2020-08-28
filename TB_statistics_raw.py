@@ -395,8 +395,8 @@ def run_TB_statistics_raw(
 	i_am.get_title().set_fontsize(4.0)		# must be done to set the title fontsize because title_fontsize doesnt work
 
 
-	plt.tight_layout()
-	plt.subplots_adjust(left=0.04, right=0.96, bottom=0.03, top=0.97, wspace=0.2, hspace=0.22)
+	fig2.tight_layout()
+	fig2.subplots_adjust(left=0.04, right=0.96, bottom=0.03, top=0.97, wspace=0.2, hspace=0.22)
 
 	# is positioned after tight layout to avoid being shifted by it
 	ax27_pos = ax2[27].get_position()
@@ -408,13 +408,18 @@ def run_TB_statistics_raw(
 	horizontalalignment='left', verticalalignment='top', wrap=True, transform=ax2[27].transAxes)
 
 
-	plt.savefig(plot_path + scatterplot_name + ".png", dpi=400, bbox_inches='tight')
-	plt.savefig(plot_path + scatterplot_name + ".pdf", orientation='portrait')
+	fig2.savefig(plot_path + scatterplot_name + ".png", dpi=400, bbox_inches='tight')
+	fig2.savefig(plot_path + scatterplot_name + ".pdf", orientation='portrait')
 
 
 
 
+	###
 	# creating another figure showing the evolution of the bias over all flights:
+	#
+
+	if len(np.unique(TB_stat_DS.date)) <= 1:
+		return # Plotting an evolution of 1 time step does not make sense
 
 	fig3, ax3 = plt.subplots(7,4)
 	fig3.set_size_inches(6.5,10.0)
@@ -492,10 +497,8 @@ def run_TB_statistics_raw(
 	# --> loc works like horiz.alignment: on this ANCHOR, the positioning is with respect to THIS point
 
 
-	plt.tight_layout()
-	plt.subplots_adjust(left=0.06, right=0.96, bottom=0.03, top=0.97, wspace=0.2, hspace=0.22)
+	fig3.tight_layout()
+	fig3.subplots_adjust(left=0.06, right=0.96, bottom=0.03, top=0.97, wspace=0.2, hspace=0.22)
 
-	plt.savefig(plot_path + bias_ev_plotname + ".png", dpi=400, bbox_inches='tight')
-	plt.savefig(plot_path + bias_ev_plotname + ".pdf", orientation='portrait')
-
-
+	fig3.savefig(plot_path + bias_ev_plotname + ".png", dpi=400, bbox_inches='tight')
+	fig3.savefig(plot_path + bias_ev_plotname + ".pdf", orientation='portrait')
