@@ -245,24 +245,6 @@ def run_TB_statistics_raw(
 
 
 	# Set global attributes to dataset:
-	# Two ways to do it: First one is here: But then the attribute structure doesn't look as well sorted as if you'd add each attr. step by step.
-	# # # # TB_stat_DS.attrs = {
-		# # # # 'description': ("EUREC4A campaign HAMP MWR vs. pamtra simulated dropsondes: " +
-						# # # # "Includes 20 seconds averaged TBs (and std deviation) from MWR and the respective pamtra simulated dropsonde TBs."),
-		# # # # 'history': "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-		# # # # 'author': "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)",
-		# # # # 'comparison_window': 10,
-		# # # # 'comparison_window_description': "Time delta (seconds) after the drop release that is used for comparison of each sonde.",
-		# # # # 'comparison_window_before': 10,
-		# # # # 'comparison_window_before_description': "Time delta (seconds) before the drop release that is used for comparison of each sonde.",
-		# # # # 'tb_cloud_threshold': stddev_threshold,
-		# # # # 'tb_cloud_threshold_description': ("A TB measurement is regarded cloudy if any* tb_std exceeded this value. " +
-										   # # # # "''any*'' means ''all''-selection for 183-band or ''any''-selection for other bands."),
-		# # # # 'max_bias_threshold': 20,
-		# # # # 'max_bias_threshold_description': "A TB measurement is regarded cloudy if the absolute difference between tb_sonde and tb_mean is larger than this value."
-		# # # # }
-
-	# The other option:
 	TB_stat_DS.attrs['description'] = ("HAMP MWR vs. pamtra simulated dropsondes: " +
 		"Includes 20 seconds averaged TBs (and std deviation) from MWR and the respective pamtra simulated dropsonde TBs.")
 	TB_stat_DS.attrs['history'] = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -276,6 +258,43 @@ def run_TB_statistics_raw(
 		"''any*'' means ''all''-selection for 183-band or ''any''-selection for other bands.")
 	TB_stat_DS.attrs['max_bias_threshold'] = bias_threshold
 	TB_stat_DS.attrs['max_bias_threshold_description'] = "A TB measurement is regarded cloudy if the absolute difference between tb_sonde and tb_mean is larger than this value."
+
+	# encoding + compressing all variables:
+	encoding = {k: {'zlib': True, 'fletcher32': True} for k in TB_stat_DS.keys()}
+	encoding = {'time': dict()}
+
+	encoding['time']['dtype'] = 'float64'
+	encoding['time']['units'] = 'seconds since 2020-01-01 00:00:00'
+
+	nfreq = len(frequency)
+	bias = np.zeros((nfreq,))		# will contain the bias for each frequency
+	rmse = np.zeros((nfreq,))		# will contain the rmse for each frequency
+	R = np.zeros((nfreq,))
+
+	# Define cloudfree data:
+	tb_sonde_cf = TB_stat_DS.tb_sonde.where(TB_stat_DS.tb_used).values	# sets the cloudy conditions to nan
+	tb_mean_cf = TB_stat_DS.tb_mean.where(TB_stat_DS.tb_used).values
+	tb_std_cf = TB_stat_DS.tb_std.where(TB_stat_DS.tb_used).values
+
+	for k in range(nfreq):
+		# for each frequency: compute bias as: TB_mwr - TB_ds (mean over all sonde launches):
+		bias[k] = np.nanmean(tb_mean_cf[:,k] - tb_sonde_cf[:,k])
+		rmse[k] = np.sqrt(np.nanmean((np.abs(tb_sonde_cf[:,k] - tb_mean_cf[:,k]))**2))
+		tb_sonde_nonnan = tb_sonde_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]	# consider only nonnan cases
+		tb_mean_nonnan = tb_mean_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]		# consider only nonnan cases (tb_mean contains most nans) -> reference!
+		R[k] = np.corrcoef(tb_sonde_nonnan, tb_mean_nonnan)[0,1]
+
+
+	# Add bias, rmse, ... to Dataset and save it as netcdf file:
+	TB_stat_DS['bias'] = xr.DataArray(bias, dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
+	TB_stat_DS['rmse'] = xr.DataArray(rmse, dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
+	TB_stat_DS['R'] = xr.DataArray(R, 		dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
+
+	TB_stat_DS.to_netcdf(out_path + output_filename + ".nc", mode='w', format='NETCDF4')
+
+
+	# Closing the Dataset
+	TB_stat_DS.close()
 
 
 	# Convert time back to seconds since 1970-01-01 00:00:00 UTC for plotting:
@@ -292,15 +311,7 @@ def run_TB_statistics_raw(
 	ax2 = ax2.flatten()
 	ax2[26].axis('off')
 	ax2[27].axis('off')
-	nfreq = len(frequency)
-	bias = np.zeros((nfreq,))		# will contain the bias for each frequency
-	rmse = np.zeros((nfreq,))		# will contain the rmse for each frequency
-	R = np.zeros((nfreq,))
 
-	# Define cloudfree data:
-	tb_sonde_cf = TB_stat_DS.tb_sonde.where(TB_stat_DS.tb_used).values	# sets the cloudy conditions to nan
-	tb_mean_cf = TB_stat_DS.tb_mean.where(TB_stat_DS.tb_used).values
-	tb_std_cf = TB_stat_DS.tb_std.where(TB_stat_DS.tb_used).values
 
 	for k in range(nfreq):
 
@@ -343,14 +354,6 @@ def run_TB_statistics_raw(
 			b_vv = m_fit_vv[1]
 
 			# mwr_fit = ax2[k].plot(a_vv*limits + b_vv, limits, color=(0,0,0), linewidth=0.4)	# a*MWR + b, MWR
-
-
-		# for each frequency: compute bias as: TB_mwr - TB_ds (mean over all sonde launches):
-		bias[k] = np.nanmean(tb_mean_cf[:,k] - tb_sonde_cf[:,k])
-		rmse[k] = np.sqrt(np.nanmean((np.abs(tb_sonde_cf[:,k] - tb_mean_cf[:,k]))**2))
-		tb_sonde_nonnan = tb_sonde_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]	# consider only nonnan cases
-		tb_mean_nonnan = tb_mean_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]		# consider only nonnan cases (tb_mean contains most nans) -> reference!
-		R[k] = np.corrcoef(tb_sonde_nonnan, tb_mean_nonnan)[0,1]
 
 		ax2[k].text(0.01, 0.99, """\
 		bias = %.2f K
@@ -496,22 +499,3 @@ def run_TB_statistics_raw(
 	plt.savefig(plot_path + bias_ev_plotname + ".pdf", orientation='portrait')
 
 
-
-	# encoding + compressing all variables:
-	encoding = {k: {'zlib': True, 'fletcher32': True} for k in TB_stat_DS.keys()}
-	encoding = {'time': dict()}
-
-	encoding['time']['dtype'] = 'float64'
-	encoding['time']['units'] = 'seconds since 2020-01-01 00:00:00'
-
-
-	# Add bias, rmse, ... to Dataset and save it as netcdf file:
-	TB_stat_DS['bias'] = xr.DataArray(bias, dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
-	TB_stat_DS['rmse'] = xr.DataArray(rmse, dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
-	TB_stat_DS['R'] = xr.DataArray(R, 		dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
-
-	TB_stat_DS.to_netcdf(out_path + output_filename + ".nc", mode='w', format='NETCDF4')
-
-
-	# Closing the Dataset
-	TB_stat_DS.close()
