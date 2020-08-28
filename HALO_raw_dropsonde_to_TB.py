@@ -192,7 +192,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		pam.runPamtra(frq)
 
 		# save output:
-		filename_out = pam_out_path + "pamtra_" + filename_in.replace(path_halo_dropsonde, '')
+		filename_out = os.path.join(pam_out_path, "pamtra_" + os.path.basename(filename_in))
 		pam.writeResultsToNetCDF(filename_out, xarrayCompatibleOutput=True, ncCompression=True)
 
 

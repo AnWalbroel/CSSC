@@ -48,6 +48,9 @@ def run_TB_statistics_raw(
 	MWR_ncfiles = sorted(glob.glob(path_mwr + "*.nc"))
 	PAM_ds_ncfiles = sorted(glob.glob(path_pam_ds + "*.nc"))
 
+	if len(PAM_ds_ncfiles) == 0:
+		raise RuntimeError("Could not find any dropsonde files in `%s'"  % (PAM_ds_ncfiles + "*.nc"))
+
 	if isinstance(obs_height, str):
 		if obs_height == 'BAHAMAS':
 			if not isinstance(path_BAH_data, str):

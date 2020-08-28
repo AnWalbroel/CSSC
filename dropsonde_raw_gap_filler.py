@@ -2,7 +2,7 @@ from __future__ import print_function, division
 import numpy as np
 import glob
 import copy
-import pdb
+import os
 from general_importer import * 		# General Importer reporting for duty.
 import datetime
 import matplotlib
@@ -681,9 +681,9 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 
 
 		# Save the extrapolated sonde dictionary to a new nc file:
-		out_filename = sonde_nc.replace(path_raw_sondes, '')		# removes the path in the string HALO_sondes_NC[m] so that the filename remains
-		out_filename = out_filename[0:-3] + "_RAW_v01.nc"
-		saveExpolSondeAsNC(sonde_dict, data_out_path_halo + out_filename)
+		out_filename = os.path.basename(sonde_nc)		# removes the path in the string HALO_sondes_NC[m] so that the filename remains
+		out_filename = os.path.join(data_out_path_halo, out_filename[0:-3] + "_RAW_v01.nc")
+		saveExpolSondeAsNC(sonde_dict, out_filename)
 
 
 	# # # # # # save the lists containing the broken and stuck files:
