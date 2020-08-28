@@ -70,7 +70,7 @@ def run_TB_statistics_raw(
 		pam_ds_dict = import_DSpam_nc(pam_ds_file, '', True, True)	# imports all keys and performs double side band averaging
 
 		time_convention_delta = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-		work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'] + time_convention_delta).strftime("%Y%m%d")
+		work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'][0] + time_convention_delta).strftime("%Y%m%d")
 
 		print("Date: " + work_date_temp)
 
@@ -216,7 +216,7 @@ def run_TB_statistics_raw(
 
 	# convert time to datetime object:
 	time = np.asarray([datetime.datetime.utcfromtimestamp(k + time_convention_delta) for k in time])
-	date = [unicode(ttt.strftime('%Y%m%d')) for ttt in time]
+	date = [u'%s' % ttt.strftime('%Y%m%d') for ttt in time] # "u'%s' %" is a workaround, that should give a unicode string in python 2 and python 3
 
 	TB_stat_DS = xr.Dataset({
 		'tb_mean': 			(['time', 'frequency'], tb_mean,
@@ -447,24 +447,18 @@ def run_TB_statistics_raw(
 
 		# marking the calibration days red
 		# find indices when dt_date and calibration_days fit:
+		calibration_days = [calib_day for calib_day in calibration_days if calib_day in dt_date]
 		fittingtime = [dt_date.index(calib_day) for calib_day in calibration_days]
 		extraplot = ax3[k].plot(calibration_days, TB_bias_date[fittingtime], color=(1,0,0), linestyle='none', marker='o', \
 		markerfacecolor=(1,0,0), markersize=0.6, label='calibration')		# add - bias[k] for a relative bias evolution
 
 		# auxiliary line at 0 bias:
-		currentxlim = ax3[k].get_xlim()
-		ax3[k].plot([currentxlim[0], currentxlim[1]], [0, 0], linewidth=0.25, color=(0,0,0), linestyle=':')
-
-		ax3[k].set_xlim(xmin=currentxlim[0], xmax=currentxlim[1])
+		ax3[k].axhline(0, linewidth=0.25, color='black', linestyle=':')
 
 		if np.all(np.isnan(TB_bias_date)):		# need to catch this frequency band because it produces nan only
-			y_limits = float('nan')
-		else:
-			y_limits = np.nanmax(np.abs(TB_bias_date))		# add - bias[k] for a relative bias evolution
-
-		if np.isnan(y_limits):
 			ax3[k].set_ylim(ymin=-1, ymax=1)
 		else:
+			y_limits = np.nanmax(np.abs(TB_bias_date))		# add - bias[k] for a relative bias evolution
 			ax3[k].set_ylim(ymin=-y_limits, ymax=y_limits)
 
 		ax3[k].tick_params(axis='both', which='major', labelsize=4.5, width=0.4, length=2, pad=2)
