@@ -12,7 +12,7 @@ from get_sst_data import download_sst_data
 from HALO_raw_dropsonde_to_TB import run_HALO_raw_dropsonde_to_TB
 from TB_statistics_raw import run_TB_statistics_raw
 
-
+os.environ['OPENBLAS_NUM_THREADS'] = "1" # workaround for pamtra and openblas, required if PAMTRA was compiled with multithreadding version of openBLAS
 
 '''
 	This is the control room for the Clear Sky Sonde Comparison (CSSC) code package where
@@ -59,10 +59,12 @@ download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date)
 # # # # # path_halo_dropsonde = out_path_halo_dropsonde	# interpolated dropsonde output path
 # # # # # path_sst = path_sst		# SST data path
 # # # # # path_BAH_data = "/data/hamp/flights/EUREC4A/unified/"	# BAHAMAS data path
-# # # # # run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst_data, path_BAH_data, pam_out_path, pamtra_datadir)
-
 # # # # # pam_out_path = "/net/sever/walbroel/CSSC_test/pam_out/"
 # # # # # print("Running HALO_raw_dropsonde_to_TB.py ..........\n")
+# # # # # run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst, pam_out_path,
+# # # # # 	#obs_height='BAHAMAS', path_BAH_data=path_BAH_data)
+# # # # # 	obs_height=10e3)
+# # # # #
 
 
 # # # # # #	5. "TB_statistics_raw.py":
@@ -75,5 +77,7 @@ download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date)
 # # # # # bias_ev_plotname = "TB_abs_biasevolution"
 # # # # # output_filename = "clear_sky_sonde_comparison_ALL"
 # # # # # print("Running TB_statistics_raw.py ..........\n")
-# # # # # run_TB_statistics_raw(path_mwr, path_pam_ds, path_BAH_data, out_path, plot_path, scatterplot_name,
-		# # # # # bias_ev_plotname, output_filename)
+# # # # # run_TB_statistics_raw(path_mwr, path_pam_ds, out_path, plot_path, scatterplot_name,
+# # # # # 	bias_ev_plotname, output_filename,
+# # # # # 	#obs_height='BAHAMAS', path_BAH_data=path_BAH_data)
+# # # # # 	obs_height=10e3,)
