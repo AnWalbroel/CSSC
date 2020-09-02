@@ -359,9 +359,9 @@ def run_TB_statistics_raw(
 			# mwr_fit = ax2[k].plot(a_vv*limits + b_vv, limits, color=(0,0,0), linewidth=0.4)	# a*MWR + b, MWR
 
 		ax2[k].text(0.01, 0.99, """\
-		bias = %.2f K
-		rmse = %.2f K
-		R = %.3f"""%(np.around(bias[k], decimals=2), np.around(rmse[k], decimals=2), np.around(R[k], decimals=3)), \
+bias = %.2f K
+rmse = %.2f K
+R = %.3f"""%(np.around(bias[k], decimals=2), np.around(rmse[k], decimals=2), np.around(R[k], decimals=3)), \
 		horizontalalignment='left', verticalalignment='top', transform=ax2[k].transAxes, fontsize=4.5)
 
 		ax2[k].set_ylim(ymin=limits[0], ymax=limits[1])

@@ -55,6 +55,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		obs_height = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
 
 	for filename_in in HALO_sondes_NC:
+		print('import', filename_in)
 		# Import sonde data:
 		# # filename_in = HALO_sondes_NC[0]
 		sonde_dict = readNCraw_V01(filename_in)
@@ -81,12 +82,25 @@ def run_HALO_raw_dropsonde_to_TB(
 
 		# find the sonde launches that produced too many nan values so that cannot run: use the RH, T, P for that:
 		if not (np.all([~np.isnan(sonde_dict['T']), ~np.isnan(sonde_dict['P']), ~np.isnan(sonde_dict['RH'])])):
+			print('WARNING, NaN in T, P, or RH. Skip %s' % filename_in)
+			print('    NaN-counts: %d, %d, %d' % (
+				np.isnan(sonde_dict['T']).sum(),
+				np.isnan(sonde_dict['P']).sum(),
+				np.isnan(sonde_dict['RH']).sum()
+			))
 			continue
 
 		if np.any(np.isnan(sonde_dict['Z'])): # sometimes, even Z can contain nan, when not using BAHAMAS
+			print('WARNING, NaN in Z. Skip %s' % filename_in)
+			print('    NaN-count: %d' % np.isnan(sonde_dict['Z']).sum())
 			continue
 
 		if np.isnan(sonde_dict['u_wind'][1] + sonde_dict['v_wind'][1]):
+			print('WARNING, NaN in u_wind[1] or v_wind[1], Skip %s' % filename_in)
+			print('    u_NaN, v_NaN?: %d, %d' % (
+				np.isnan(sonde_dict['u_wind'][1]),
+				np.isnan(sonde_dict['v_wind'][1]),
+			))
 			continue
 
 		# assert np.all(~np.isnan(sonde_dict['RH']))
