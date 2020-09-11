@@ -10,6 +10,10 @@ import pdb
 
 def run_concat_mwr(day_folders, mwr_out_path):
 
+	# Check if path for concatenated mwr files exists:
+	if not os.path.exists(mwr_out_path):
+		os.mkdir(mwr_out_path)
+
 	for folder in day_folders:
 		folder_modules = {										##################
 			'KV': folder + "/radiometer/KV/",					##################

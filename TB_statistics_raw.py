@@ -42,6 +42,11 @@ def run_TB_statistics_raw(
 	# 'time'. Other supplemental information: 'frequency', string date(time) with description: "Date of corresponding Flight" and
 	# in units "YYYYMMDD", sonde index 'sondenumber'.
 
+	# Check if the sonde comparison output and plot path exist:
+	if not os.path.exists(out_path):
+		os.mkdir(out_path)
+	if not os.path.exists(plot_path):
+		os.mkdir(plot_path)
 
 	# Import HAMP mwr data, simulated dropsonde files, ...:
 

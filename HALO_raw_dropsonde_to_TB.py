@@ -6,6 +6,7 @@ import glob
 from general_importer import readNCraw_V01, import_GHRSST, import_BAHAMAS_unified		# "General Importer reporting for duty"
 import pdb
 import matplotlib.pyplot as plt
+import multiprocessing
 
 
 
@@ -37,6 +38,10 @@ def run_HALO_raw_dropsonde_to_TB(
 	if 'PAMTRA_DATADIR' not in os.environ:
 		os.environ['PAMTRA_DATADIR'] = "" # actual path is not required, but the variable has to be defined.
 	import pyPamtra
+
+	# Check if the PAMTRA output path exists:
+	if not os.path.exists(pam_out_path):
+		os.mkdir(pam_out_path)
 
 	HALO_sondes_NC = sorted(glob.glob(path_halo_dropsonde + "*v01.nc"))
 	SST_files_NC = sorted(glob.glob(path_sst_data + "*.nc.nc4"))
@@ -202,8 +207,10 @@ def run_HALO_raw_dropsonde_to_TB(
 		# Create pamtra profile and go:
 		pam.createProfile(**pamData)
 		print("Starting PAMTRA on '" + filename_in + "':")
-		# pam.runParallelPamtra(frq, pp_deltaX=0, pp_deltaY=0, pp_deltaF=1, pp_local_workers='auto')
-		pam.runPamtra(frq)
+		# pam.runPamtra(frq)
+
+		n_cpus = int(multiprocessing.cpu_count()/2)		# half the number of available CPUs
+		pam.runParallelPamtra(frq, pp_deltaX=0, pp_deltaY=0, pp_deltaF=1, pp_local_workers=n_cpus)
 
 		# save output:
 		filename_out = os.path.join(pam_out_path, "pamtra_" + os.path.basename(filename_in))

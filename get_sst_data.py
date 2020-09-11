@@ -4,6 +4,7 @@ import urllib
 import datetime as dt
 import pandas as pd
 import pdb
+import os
 
 # in python3, .urlretrieve() and .urlcleanup() are part of urllib.request,
 # while in python2 they were directly under urllib.
@@ -48,15 +49,19 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 	############################################################################################
 
 
+	'''
+	Get SST data from CMC0.1deg-CMC-L4-GLOB-v3.0 via OPENDAP tool. For this we need to select
+	latitude and longitude boundaries as well as the required dates.
+		path_sst = "/work/walbroel/data/sst_slice/"		# SST data will be saved here
+		lat_bound = [20, 50.5]		# latitude boundaries in deg north (southern hemisphere with negative sign)
+		lon_bound = [-40, 10]		# longitude boundaries in deg east (west of prime meridian: negative sign)
+		start_date = "2020-03-06"	# start date in YYYY-MM-DD
+		end_date = "2020-03-08"		# end date
+	'''
 
-	# Get SST data from CMC0.1deg-CMC-L4-GLOB-v3.0 via OPENDAP tool. For this we need to select
-	# latitude and longitude boundaries as well as the required dates.
-	# path_sst = "/work/walbroel/data/sst_slice/"		# SST data will be saved here
-	# lat_bound = [20, 50.5]		# latitude boundaries in deg north (southern hemisphere with negative sign)
-	# lon_bound = [-40, 10]		# longitude boundaries in deg east (west of prime meridian: negative sign)
-	# start_date = "2020-03-06"	# start date in YYYY-MM-DD
-	# end_date = "2020-03-08"		# end date
-
+	# Check the existence of the path where the files shall be saved to:
+	if not os.path.exists(path_sst):
+		os.mkdir(path_sst)
 
 	# convert dates to pandas datetime:
 	start_date = pd.to_datetime(start_date, format="%Y-%m-%d")		# in YYYY-MM-DD
