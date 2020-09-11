@@ -3,7 +3,7 @@ Lines that are most likely to be edited by the user in the code are marked with 
 
 1. 	Make sure that your MWR data is concatenated, which is usually not the case. The MWR data for each
 	module (KV, 11990, 183) is saved separately as <current_date>.BRT.NC (current_date in YYMMDD,
-	e.g. "200119" being the 19 th January 2020) file. Other file extensions like .ATN.NC (attenuation)
+	e.g. "200119" being the 19th January 2020) file. Other file extensions like .ATN.NC (attenuation)
 	are also stored in the module folder but irrelevant for the clear sky sonde comparison.
 
 	To concatenate the MWR data (glueing all modules together and getting them on a mutual time axis)
@@ -14,19 +14,23 @@ Lines that are most likely to be edited by the user in the code are marked with 
 				abc@xyz:base_path$ ls
 				20200118  20200122  20200126  20200129  20200131  20200205
 		).
-		Inside these day folders you either have directly the module folders "KV", "11990" and "183" or
+		Inside these day folders you either directly find the module folders "KV", "11990" and "183" or
 		another subfolder may appear like "radiometer" so that you have:
 		abc@xyz:base_path/20200118/radiometer/KV$ or another module instead of "KV". Inside that folder
-		the .BRT.NC files should be saved. Example: mwr_base_path = "/data/hamp/flights/EUREC4A/"
-	- Assign an output path where the concatenated mwr files shall be saved to: "mwr_out_path = "
+		the .BRT.NC files should be located. Example: mwr_base_path = "/data/hamp/flights/EUREC4A/"
 	- Make sure that "day_folders" is a list that contains folder paths of dates (e.g.
 		day_folders = sorted(glob.glob(mwr_base_path + "*")) is not possible if
 		mwr_base_path = "/data/hamp/flights/EUREC4A/" because there are other folders inside mwr_base_path).
 		Example: day_folders = sorted(glob.glob(mwr_base_path + "*"))[1:17]
-	- Make sure that "folder_modules = ", when the loop over the "day_folders" has started, contains the
-		path of all modules as a list so that inside "folder_modules" the .BRT.NC files can be read in
-		later, e.g.
-		folder_modules = [folder + "/radiometer/KV/", folder + "/radiometer/11990/", folder + "/radiometer/183/"]
+	- Assign an output path where the concatenated (v01) mwr files shall be saved to: "mwr_concat_path = "
+	- WITHIN concat_mwr.py, make sure that "folder_modules = ", when the loop over the "day_folders" has
+		started, contains the path of all modules as a dictionary so that inside "folder_modules" the .BRT.NC
+		files can be read in later, e.g.
+		folder_modules = {
+			'KV': folder + "/radiometer/KV/",
+			'11990': folder + "/radiometer/11990/",
+			'183': folder + "/radiometer/183/"
+			}
 		with folder being one of the day folders ("base_path/20200118/").
 	- Make sure that "folder_date = " is the date of the current folder (in YYMMDD). For the example
 		above the folder_date should be "200118" by slicing the string of the current day folder
@@ -41,10 +45,11 @@ Lines that are most likely to be edited by the user in the code are marked with 
 
 	- Assign "path_raw_sondes = " to the path where the D<date>_PQC.nc (date in YYYYMMDD_hhmmss (e.g.
 		D20200207_175237_PQC.nc)) are located.
-	- Assign "data_out_path_halo = " where the gap-filled version (v01) shall be saved.
+	- Assign "path_halo_dropsonde = " where the gap-filled version (v01) shall be saved.
 	- Assign "path_BAH_data = " as the path where BAHAMAS measurements are stored because BAHAMAS
-		measurements will partly be used as extrapolation target. (Eventually this must
-		be adapted even more if the BAHAMAS data is still in its raw version.)
+		measurements can partly be used as extrapolation target. If BAHAMAS data is not to be used
+		or not available, set "path_BAH_data = None" , comment it out or remove it from the
+		call of the function "run_dropsonde_raw_gap_filler".
 	- Wait for the execution to finish.
 
 3.	Two options: Manually select and download SST data or assign location and time boundaries for an
@@ -87,14 +92,7 @@ Lines that are most likely to be edited by the user in the code are marked with 
 	"dropsonde_raw_gap_filler.py" will be skipped during execution because PAMTRA cannot handle NaNs.
 	Only the nadir looking and polarization-averaged brightness temperatures will be saved.
 
-	- Assign the path of the v01 dropsondes (gap-filled) in "path_halo_dropsonde = ".
-	- Assign the path of the sst data in "path_sst_data = ".
-	- Assign the path of the BAHAMAS data in "path_BAH_data = ". In this program the BAHAMAS
-		data is used to find the aircraft altitude to estimate the observation height for PAMTRA.
-	- Assign a path where the PAMTRA output shall be saved to in "pam_out_path = ".
-	- Set your pamtra path in "pamtra_datadir = ", so that in HALO_raw_dropsonde_to_TB.py,
-		os.environ['PAMTRA_DATADIR'] = pamtra_datadir.
-		E.g. pamtra_datadir = '/work/walbroel/pamtra/'
+	- Assign a path where the PAMTRA output shall be saved to in "path_pam_ds = ".
 	- Wait for the execution to finish (depending on the amount of dropsondes, this may take a while...
 		I suggest a coffee break).
 
@@ -102,9 +100,6 @@ Lines that are most likely to be edited by the user in the code are marked with 
 	brightness temperatures from dropsondes using "TB_statistics_raw.py". Some basic plots showing
 	e.g. a scatterplot of measured and simulated brightness temperatures can be included.
 
-	- Assign the path of the concatenated MWR files in "path_mwr = ".
-	- Assign the path of the PAMTRA output in "path_pam_ds = ".
-	- Assign the path of the BAHAMAS data in "path_BAH_data = ".
 	- Set a path where the comparison netCDF4 file shall be saved to in "out_path = ".
 	- Set a path where the plots shall be saved to in "plot_path = ".
 	- Set a name for the scatterplot WITHOUT file extension (will be saved as .png and .pdf) in
