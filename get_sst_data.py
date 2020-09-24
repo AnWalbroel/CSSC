@@ -60,8 +60,9 @@ def download_sst_data(path_sst, lat_bound, lon_bound, start_date, end_date):
 	'''
 
 	# Check the existence of the path where the files shall be saved to:
-	if not os.path.exists(path_sst):
-		os.mkdir(path_sst)
+	path_sst_dir = os.path.dirname(path_sst)
+	if not os.path.exists(path_sst_dir):
+		os.makedirs(path_sst_dir)
 
 	# convert dates to pandas datetime:
 	start_date = pd.to_datetime(start_date, format="%Y-%m-%d")		# in YYYY-MM-DD

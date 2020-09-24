@@ -43,10 +43,12 @@ def run_TB_statistics_raw(
 	# in units "YYYYMMDD", sonde index 'sondenumber'.
 
 	# Check if the sonde comparison output and plot path exist:
-	if not os.path.exists(out_path):
-		os.mkdir(out_path)
-	if not os.path.exists(plot_path):
-		os.mkdir(plot_path)
+	out_path_dir = os.path.dirname(out_path)
+	if not os.path.exists(out_path_dir):
+		os.makedirs(out_path_dir)
+	plot_path_dir = os.path.dirname(plot_path)
+	if not os.path.exists(plot_path_dir):
+		os.makedirs(plot_path_dir)
 
 	# Import HAMP mwr data, simulated dropsonde files, ...:
 

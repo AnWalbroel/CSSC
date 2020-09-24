@@ -925,8 +925,9 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 
 
 		# Save the extrapolated sonde dictionary to a new nc file:
-		if not os.path.exists(data_out_path_halo):
-			os.mkdir(data_out_path_halo)
+		data_out_path_halo_dir = os.path.dirname(data_out_path_halo)
+		if not os.path.exists(data_out_path_halo_dir):
+			os.makedirs(data_out_path_halo_dir)
 		out_filename = os.path.basename(sonde_nc)		# removes the path in the string HALO_sondes_NC[m] so that the filename remains
 		out_filename = os.path.join(data_out_path_halo, out_filename[0:-3] + "_RAW_v01.nc")
 

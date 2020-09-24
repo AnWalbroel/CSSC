@@ -40,8 +40,9 @@ def run_HALO_raw_dropsonde_to_TB(
 	import pyPamtra
 
 	# Check if the PAMTRA output path exists:
-	if not os.path.exists(pam_out_path):
-		os.mkdir(pam_out_path)
+	pam_out_path_dir = os.path.dirname(pam_out_path)
+	if not os.path.exists(pam_out_path_dir):
+		os.makedirs(pam_out_path_dir)
 
 	HALO_sondes_NC = sorted(glob.glob(path_halo_dropsonde + "*v01.nc"))
 	SST_files_NC = sorted(glob.glob(path_sst_data + "*.nc.nc4"))

@@ -11,8 +11,9 @@ import pdb
 def run_concat_mwr(day_folders, mwr_out_path):
 
 	# Check if path for concatenated mwr files exists:
-	if not os.path.exists(mwr_out_path):
-		os.mkdir(mwr_out_path)
+	mwr_out_path_dir = os.path.dirname(mwr_out_path)
+	if not os.path.exists(mwr_out_path_dir):
+		os.makedirs(mwr_out_path_dir)
 
 	for folder in day_folders:
 		folder_modules = {										##################
