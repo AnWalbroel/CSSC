@@ -334,16 +334,6 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 
 			new_dict[key] = new_var
 
-
-		# now since there are no more nans at the top the variables can be regridded to JOANNE grid (10 m resolution):
-		new_alt = np.arange(0, obs_height+1, 10)
-
-		for key in ill_keys:
-			new_dict[key] = np.interp(new_alt, new_dict['Z'], new_dict[key])
-
-		new_dict['Z'] = new_alt
-
-
 		return new_dict, new_ipflag_dict, obs_height
 
 
@@ -563,16 +553,6 @@ def run_dropsonde_raw_gap_filler(path_raw_sondes, data_out_path_halo, path_BAH_d
 
 
 			new_dict[key] = new_var
-
-
-		# now since there are no more nans at the top the variables can be regridded to JOANNE grid (10 m resolution):
-		new_alt = np.arange(0, obs_height+1, 10)
-
-		for key in ill_keys:
-			new_dict[key] = np.interp(new_alt, new_dict['Z'], new_dict[key])
-
-		new_dict['Z'] = new_alt
-
 
 		return new_dict, new_ipflag_dict, obs_height
 
