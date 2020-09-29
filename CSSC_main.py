@@ -34,7 +34,7 @@ run_concat_mwr(day_folders, mwr_concat_path)
 
 
 # 2. "dropsonde_raw_gap_filler.py":
-path_raw_sondes = "/net/sever/walbroel/CSSC_test/sonde_half_raw/"
+path_raw_sondes = "/net/sever/walbroel/data/JOANNE_Level_3/"
 path_halo_dropsonde = "/net/sever/walbroel/CSSC_test/sonde_qc_interpolated_v01_BAH_J/"
 dropsonde_dataset = "joanne_level_3"
 path_BAH_data = "/data/hamp/flights/EUREC4A/unified/"	# BAHAMAS data path; OPTIONAL

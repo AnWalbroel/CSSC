@@ -180,6 +180,53 @@ def readNCrawJOANNE2(filename, verbose=False):
 	return dropsonde_dict
 
 
+# This importer routine is designed for JOANNE3.0 data.
+# Timestamp is already in Unixtime (seconds since 1970-01-01 00:00:00 UTC) and will be converted
+# to seconds since 2020-01-01 00:00:00 UTC:
+def readNCrawJOANNE3(	filename,
+						keys=['alt', 'launch_time', 'lat', 'lon',
+							'p', 'ta', 'rh', 'u', 'v', 'flight_lat',
+							'flight_lon', 'flight_height', 'platform'],
+						verbose=False):
+	file_nc = nc.Dataset(filename)
+
+	if verbose: print("Working on '" + filename + "'.")
+
+	if keys == '':
+		keys = file_nc.variables.keys()
+
+	dropsonde_dict = dict()
+	dropsonde_dict['fillValues'] = dict()
+	for nc_keys in keys:
+
+		if not nc_keys in file_nc.variables.keys():
+			raise KeyError("I have no memory of this key '%s'. Key not found in JOANNE V3 dropsonde file." % nc_keys)
+
+		nc_var = file_nc.variables[nc_keys]
+		if nc_keys != 'platform': # because that key is a string
+			dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
+		else:
+			dropsonde_dict[nc_keys] = np.asarray(nc_var)
+
+		if hasattr(nc_var, '_FillValue'):
+			dropsonde_dict['fillValues'][nc_keys] = nc_var._FillValue
+			dropsonde_dict[nc_keys][dropsonde_dict[nc_keys] == nc_var._FillValue] = float('nan')
+
+
+	dropsonde_dict['launch_time'] = np.rint(dropsonde_dict['launch_time']).astype(float)
+	dropsonde_dict['launch_time'] = (dt.datetime(1970,1,1) - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
+
+	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
+	dropsonde_dict['T'] = dropsonde_dict['ta']
+	dropsonde_dict['P'] = dropsonde_dict['p']
+	dropsonde_dict['RH'] = dropsonde_dict['rh']*100
+	dropsonde_dict['Z'] = dropsonde_dict['alt']
+	dropsonde_dict['u_wind'] = dropsonde_dict['u']
+	dropsonde_dict['v_wind'] = dropsonde_dict['v']
+
+	return dropsonde_dict
+
+
 # This function works similar to readNCraw but is adapted to work for v01 dropsonde files:
 def readNCraw_V01(filename, verbose=False):
 	file_nc = nc.Dataset(filename)
