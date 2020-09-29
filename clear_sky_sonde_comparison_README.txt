@@ -41,11 +41,14 @@ Lines that are most likely to be edited by the user in the code are marked with 
 2.	Prepare the dropsonde files via "dropsonde_raw_gap_filler.py":
 	Small gaps in the profiles will be filled via linear interpolation and, if necessary,
 	extrapolation at the top and bottom will be performed if data is missing and the data void is not
-	too large.
+	too large. Here it is possible to choose different datasets of dropsondes (e.g. raw dropsondes,
+	JOANNE dataset, ...); all options are listed below:
 
 	- Assign "path_raw_sondes = " to the path where the D<date>_PQC.nc (date in YYYYMMDD_hhmmss (e.g.
 		D20200207_175237_PQC.nc)) are located.
 	- Assign "path_halo_dropsonde = " where the gap-filled version (v01) shall be saved.
+	- Assign the dataset description in "dropsonde_dataset" and string. Valid options are "raw" and
+		"joanne_level_3". Default is "raw".
 	- Assign "path_BAH_data = " as the path where BAHAMAS measurements are stored because BAHAMAS
 		measurements can partly be used as extrapolation target. If BAHAMAS data is not to be used
 		or not available, set "path_BAH_data = None" , comment it out or remove it from the
