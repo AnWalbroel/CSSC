@@ -27,7 +27,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = "1" # workaround for pamtra and openblas, r
 # # # # 	explained in the README file).
 # # # mwr_base_path = "/data/hamp/flights/EUREC4A/"
 # # # day_folders = sorted(glob.glob(mwr_base_path + "*"))[0:17]	# all day folders will be saved here
-# # # mwr_concat_path = "/net/sever/walbroel/CSSC_test/halo/mwr/"
+mwr_concat_path = "/net/sever/walbroel/CSSC_test/halo/mwr/"
 # # # print("Running concat_mwr.py ..........\n")
 # # # run_concat_mwr(day_folders, mwr_concat_path)
 
@@ -37,7 +37,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = "1" # workaround for pamtra and openblas, r
 # # # path_raw_sondes = "/net/sever/walbroel/data/sonde_half_raw/"
 # # # path_halo_dropsonde = "/net/sever/walbroel/CSSC_test/sonde_qc_interpolated_v01_BAH/"
 # # # dropsonde_dataset = "raw"
-# # # path_BAH_data = "/data/hamp/flights/EUREC4A/unified/"	# BAHAMAS data path; OPTIONAL
+path_BAH_data = "/data/hamp/flights/EUREC4A/unified/"	# BAHAMAS data path; OPTIONAL
 # # # print("Running dropsonde_raw_gap_filler.py ..........\n")
 # # # run_dropsonde_gap_filler(path_raw_sondes, path_halo_dropsonde, dropsonde_dataset, path_BAH_data)
 
@@ -59,7 +59,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = "1" # workaround for pamtra and openblas, r
 # # # #	4. "HALO_raw_dropsonde_to_TB.py":
 # # # path_halo_dropsonde = path_halo_dropsonde	# interpolated dropsonde output path
 # # # path_sst = path_sst		# SST data path
-# # # path_pam_ds = "/net/sever/walbroel/CSSC_test/pam_out_BAH/"  # output path of pamtra
+path_pam_ds = "/net/sever/walbroel/CSSC_test/pam_out_BAH/"  # output path of pamtra
 # # # print("Running HALO_raw_dropsonde_to_TB.py ..........\n")
 # # # run_HALO_raw_dropsonde_to_TB(path_halo_dropsonde, path_sst, path_pam_ds,
 	# # # obs_height='BAHAMAS', path_BAH_data=path_BAH_data)
