@@ -76,145 +76,146 @@ def run_TB_statistics_raw(
 	file_index = 0		# can also be used to address the correct files if the number of files is the same for all 3 options (DS, MWR, PAM_DS)
 	sonde_number_temp = 0
 	for pam_ds_file in PAM_ds_ncfiles:
+		if "20200124" in pam_ds_file:
 
-		pam_ds_dict = import_DSpam_nc(pam_ds_file, '', True, True)	# imports all keys and performs double side band averaging
+			pam_ds_dict = import_DSpam_nc(pam_ds_file, '', True, True)	# imports all keys and performs double side band averaging
 
-		time_convention_delta = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-		work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'][0] + time_convention_delta).strftime("%Y%m%d")
+			time_convention_delta = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
+			work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'][0] + time_convention_delta).strftime("%Y%m%d")
 
-		print("Date: " + work_date_temp)
+			print("Date: " + work_date_temp)
 
-		# auxiliary date which will be used to identify if the current file still belongs to the same day:
-		if file_index == 0:
-			date_aux = copy.deepcopy(work_date_temp)
-			day_idx_temp = 0		# identifies the n-th sonde of the current day
-		else:
-			day_idx_temp = day_idx_temp + 1
+			# auxiliary date which will be used to identify if the current file still belongs to the same day:
+			if file_index == 0:
+				date_aux = copy.deepcopy(work_date_temp)
+				day_idx_temp = 0		# identifies the n-th sonde of the current day
+			else:
+				day_idx_temp = day_idx_temp + 1
 
-		if work_date_temp != date_aux:		# overwrite date aux and reset the day_idx counter
-			date_aux = copy.deepcopy(work_date_temp)
-			day_idx_temp = 0
-
-
-		# Import the correct files (of same day):
-		# finding the right file via scanning with for: ...
-		mwr_file = [mwrfile for mwrfile in MWR_ncfiles if work_date_temp[2:] in mwrfile][0]
+			if work_date_temp != date_aux:		# overwrite date aux and reset the day_idx counter
+				date_aux = copy.deepcopy(work_date_temp)
+				day_idx_temp = 0
 
 
-		bah_keys = ['time', 'altitude']		# keys for BAHAMAS data import
-		bah_filenames = [bah_file for bah_file in BAH_files_NC if work_date_temp in bah_file]
-		if bah_filenames:
-			bah_dict = import_BAHAMAS_unified(bah_filenames[0], bah_keys)
+			# Import the correct files (of same day):
+			# finding the right file via scanning with for: ...
+			mwr_file = [mwrfile for mwrfile in MWR_ncfiles if work_date_temp[2:] in mwrfile][0]
 
 
-		mwr_dict = import_mwr_nc(mwr_file)		# imports all keys of the mwr file (v01 - concatenated mwr files)
-
-		nlaunches = len(pam_ds_dict['datatime'])			# should be == 1 for _raw (bc. each sonde file considered seperately)
-
-		# find mwr time indices when they match the dropsonde launch time: Should yield about 4*nlaunches indices bc. of 4 Hz measurement rate.
-		# must be reshaped because python create an unnecessary array dimensions:
-		# expand the indices for each launch to 10 seconds before and 10 seconds after the dropsonde launch:
-		idx = np.argwhere((mwr_dict['time'] >= pam_ds_dict['datatime'] - 10) & (mwr_dict['time'] < pam_ds_dict['datatime'] + 10))
-		idx = np.reshape(idx, (idx.shape[0],))
+			bah_keys = ['time', 'altitude']		# keys for BAHAMAS data import
+			bah_filenames = [bah_file for bah_file in BAH_files_NC if work_date_temp in bah_file]
+			if bah_filenames:
+				bah_dict = import_BAHAMAS_unified(bah_filenames[0], bah_keys)
 
 
-		# mean and std_dev of mwr TB at these indices:
-		tb_mean_temp = np.asarray([np.nanmean(mwr_dict['TBs'][idx,:], axis=0)])
-		tb_std_temp = np.asarray([np.nanstd(mwr_dict['TBs'][idx,:], axis=0, dtype=np.float64)])
-		frequency = np.asarray([22.24, 23.04, 23.84, 25.44, 26.24, 27.84, 31.4, 50.3, 51.76, 52.8, 53.75, 54.94, 56.66,
-			58., 90., 120.15, 121.05, 122.95, 127.25, 183.91, 184.81, 185.81, 186.81, 188.31, 190.81, 195.81])
+			mwr_dict = import_mwr_nc(mwr_file)		# imports all keys of the mwr file (v01 - concatenated mwr files)
 
-		# max_tb_stddev_temp will contain the maximum std deviation among all channels for each sonde launch
-		max_tb_stddev_temp = np.reshape(np.repeat(np.nanmax(tb_std_temp), len(frequency)), tb_std_temp.shape)
+			nlaunches = len(pam_ds_dict['datatime'])			# should be == 1 for _raw (bc. each sonde file considered seperately)
 
-
-		# number of included measurements per launch:
-		tb_N = np.asarray([len(idx)])
-
-		# find the correct aircraft altitude for each launch:
-		if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
-			bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
-				np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
-			t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
-			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
-			obs_height = drop_alt
-
-		# select correct pamtra outlevel:
-		outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in obs_height]).flatten()
-
-		# positional information:
-		sonde_lon_temp = pam_ds_dict['longitude']
-		sonde_lat_temp = pam_ds_dict['latitude']
+			# find mwr time indices when they match the dropsonde launch time: Should yield about 4*nlaunches indices bc. of 4 Hz measurement rate.
+			# must be reshaped because python create an unnecessary array dimensions:
+			# expand the indices for each launch to 10 seconds before and 10 seconds after the dropsonde launch:
+			idx = np.argwhere((mwr_dict['time'] >= pam_ds_dict['datatime'] - 10) & (mwr_dict['time'] < pam_ds_dict['datatime'] + 10))
+			idx = np.reshape(idx, (idx.shape[0],))
 
 
-		# pamtra simulated TBs and information about launch time:
-		tb_sonde_temp = np.asarray([pam_ds_dict['tb'][0, outlevel_idx[0], :]])			# shall be a (nlaunches x frequencies) array
-		time_temp = pam_ds_dict['datatime']
-		date_temp = datetime.datetime.utcfromtimestamp(time_temp[0] + time_convention_delta).strftime("%Y%m%d")
+			# mean and std_dev of mwr TB at these indices:
+			tb_mean_temp = np.asarray([np.nanmean(mwr_dict['TBs'][idx,:], axis=0)])
+			tb_std_temp = np.asarray([np.nanstd(mwr_dict['TBs'][idx,:], axis=0, dtype=np.float64)])
+			frequency = np.asarray([22.24, 23.04, 23.84, 25.44, 26.24, 27.84, 31.4, 50.3, 51.76, 52.8, 53.75, 54.94, 56.66,
+				58., 90., 120.15, 121.05, 122.95, 127.25, 183.91, 184.81, 185.81, 186.81, 188.31, 190.81, 195.81])
+
+			# max_tb_stddev_temp will contain the maximum std deviation among all channels for each sonde launch
+			max_tb_stddev_temp = np.reshape(np.repeat(np.nanmax(tb_std_temp), len(frequency)), tb_std_temp.shape)
 
 
-		# find if std dev threshold is surpassed for any sonde launch:
-		stddev_threshold = 1		# in Kelvin
-		tb_used_temp = np.ones((1, len(frequency)), dtype=bool)
-		# for G band: np.all and for the remaining channels it suffices for np.any channel to surpass the threshold.
-		# For the 6 (or 7) G band entries we consider the std. of all 25 channels. In case it's greater than the
-		# threshold the 6 (or 7) G band entries are assigned False entries. The remaining 19 channels (K,V,W,F)
-		# are assigned True if the std. in all of these channels is less than the threshold. In case any non G band
-		# channel shows a greater std. the 19 channels (K,V,W,F) receive a False.
-		cloudy_G = [np.all(tb_std_temp[k,:26] > stddev_threshold) for k in range(nlaunches)]
-		# -> if this is true for a sonde launch and cloudy_rest is NOT: only the G band channels receive a FALSE in tb_used
+			# number of included measurements per launch:
+			tb_N = np.asarray([len(idx)])
 
-		cloudy_rest = [np.any(tb_std_temp[k,:19] > stddev_threshold) for k in range(nlaunches)]
-		# -> for the launch when this is true: tb_used gets a FALSE for frequency entries 0:19
+			# find the correct aircraft altitude for each launch:
+			if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
+				bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
+					np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
+				t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
+				drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
+				obs_height = drop_alt
 
-		sondenumber_temp = np.asarray([day_idx_temp])
+			# select correct pamtra outlevel:
+			outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in obs_height]).flatten()
 
-
-		# set cloudy launches to false:
-		if cloudy_G[0]:
-			tb_used_temp[19:] = False
-		if cloudy_rest[0]:
-			tb_used_temp[:19] = False
-
-		# remove cases with extreme bias: considered cloudy if the bias_threshold is exceeded
-		bias_threshold = 30
-		for k in range(len(frequency)):	tb_used_temp[np.abs(tb_sonde_temp[:,k] - tb_mean_temp[:,k]) > bias_threshold, k] = False
+			# positional information:
+			sonde_lon_temp = pam_ds_dict['longitude']
+			sonde_lat_temp = pam_ds_dict['latitude']
 
 
-		# Concatenate the temporary arrays for each day:
-		if file_index == 0:
-			tb_mean = np.reshape(tb_mean_temp, (1, len(frequency)))
-			tb_std = np.reshape(tb_std_temp, (1, len(frequency)))
-			tb_sonde = np.reshape(tb_sonde_temp, (1, len(frequency)))
-			max_tb_stddev = np.reshape(max_tb_stddev_temp, (1, len(frequency)))
-			tb_used = np.reshape(tb_used_temp, (1, len(frequency)))
-			work_date = [work_date_temp]
-			time = time_temp
-			obsheight_save = obs_height
-			sondenumber = sondenumber_temp
-			sonde_lon = sonde_lon_temp
-			sonde_lat = sonde_lat_temp
-
-			day_index = [day_idx_temp]	# for the first day just indicates the first day's sonde launches
+			# pamtra simulated TBs and information about launch time:
+			tb_sonde_temp = np.asarray([pam_ds_dict['tb'][0, outlevel_idx[0], :]])			# shall be a (nlaunches x frequencies) array
+			time_temp = pam_ds_dict['datatime']
+			date_temp = datetime.datetime.utcfromtimestamp(time_temp[0] + time_convention_delta).strftime("%Y%m%d")
 
 
-		else: # then the non temporary arrays have already been initialized and we can use np.concatenate
-			tb_mean = np.concatenate((tb_mean, tb_mean_temp), axis=0)
-			tb_std = np.concatenate((tb_std, tb_std_temp), axis=0)
-			tb_sonde = np.concatenate((tb_sonde, tb_sonde_temp), axis=0)
-			max_tb_stddev = np.concatenate((max_tb_stddev, max_tb_stddev_temp), axis=0)
-			tb_used = np.concatenate((tb_used, tb_used_temp), axis=0)
-			work_date.append(work_date_temp)
-			time = np.concatenate((time, time_temp), axis=0)
-			obsheight_save = np.concatenate((obsheight_save, obs_height), axis=0)
-			sondenumber = np.concatenate((sondenumber, sondenumber_temp), axis=0)
-			sonde_lon = np.concatenate((sonde_lon, sonde_lon_temp), axis=0)
-			sonde_lat = np.concatenate((sonde_lat, sonde_lat_temp), axis=0)
+			# find if std dev threshold is surpassed for any sonde launch:
+			stddev_threshold = 1		# in Kelvin
+			tb_used_temp = np.ones((1, len(frequency)), dtype=bool)
+			# for G band: np.all and for the remaining channels it suffices for np.any channel to surpass the threshold.
+			# For the 6 (or 7) G band entries we consider the std. of all 25 channels. In case it's greater than the
+			# threshold the 6 (or 7) G band entries are assigned False entries. The remaining 19 channels (K,V,W,F)
+			# are assigned True if the std. in all of these channels is less than the threshold. In case any non G band
+			# channel shows a greater std. the 19 channels (K,V,W,F) receive a False.
+			cloudy_G = [np.all(tb_std_temp[k,:26] > stddev_threshold) for k in range(nlaunches)]
+			# -> if this is true for a sonde launch and cloudy_rest is NOT: only the G band channels receive a FALSE in tb_used
 
-			day_index.append(day_idx_temp)
+			cloudy_rest = [np.any(tb_std_temp[k,:19] > stddev_threshold) for k in range(nlaunches)]
+			# -> for the launch when this is true: tb_used gets a FALSE for frequency entries 0:19
+
+			sondenumber_temp = np.asarray([day_idx_temp])
 
 
-		file_index = file_index + 1
+			# set cloudy launches to false:
+			if cloudy_G[0]:
+				tb_used_temp[19:] = False
+			if cloudy_rest[0]:
+				tb_used_temp[:19] = False
+
+			# remove cases with extreme bias: considered cloudy if the bias_threshold is exceeded
+			bias_threshold = 30
+			for k in range(len(frequency)):	tb_used_temp[np.abs(tb_sonde_temp[:,k] - tb_mean_temp[:,k]) > bias_threshold, k] = False
+
+
+			# Concatenate the temporary arrays for each day:
+			if file_index == 0:
+				tb_mean = np.reshape(tb_mean_temp, (1, len(frequency)))
+				tb_std = np.reshape(tb_std_temp, (1, len(frequency)))
+				tb_sonde = np.reshape(tb_sonde_temp, (1, len(frequency)))
+				max_tb_stddev = np.reshape(max_tb_stddev_temp, (1, len(frequency)))
+				tb_used = np.reshape(tb_used_temp, (1, len(frequency)))
+				work_date = [work_date_temp]
+				time = time_temp
+				obsheight_save = obs_height
+				sondenumber = sondenumber_temp
+				sonde_lon = sonde_lon_temp
+				sonde_lat = sonde_lat_temp
+
+				day_index = [day_idx_temp]	# for the first day just indicates the first day's sonde launches
+
+
+			else: # then the non temporary arrays have already been initialized and we can use np.concatenate
+				tb_mean = np.concatenate((tb_mean, tb_mean_temp), axis=0)
+				tb_std = np.concatenate((tb_std, tb_std_temp), axis=0)
+				tb_sonde = np.concatenate((tb_sonde, tb_sonde_temp), axis=0)
+				max_tb_stddev = np.concatenate((max_tb_stddev, max_tb_stddev_temp), axis=0)
+				tb_used = np.concatenate((tb_used, tb_used_temp), axis=0)
+				work_date.append(work_date_temp)
+				time = np.concatenate((time, time_temp), axis=0)
+				obsheight_save = np.concatenate((obsheight_save, obs_height), axis=0)
+				sondenumber = np.concatenate((sondenumber, sondenumber_temp), axis=0)
+				sonde_lon = np.concatenate((sonde_lon, sonde_lon_temp), axis=0)
+				sonde_lat = np.concatenate((sonde_lat, sonde_lat_temp), axis=0)
+
+				day_index.append(day_idx_temp)
+
+
+			file_index = file_index + 1
 
 
 
