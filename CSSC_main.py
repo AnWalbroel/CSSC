@@ -70,9 +70,9 @@ path_pam_ds = "/net/sever/walbroel/CSSC_test/pam_out_BAH/"  # output path of pam
 #	5. "TB_statistics_raw.py":
 out_path = "/net/sever/walbroel/CSSC_test/sonde_comparison_half_raw_BAH/"
 plot_path = "/net/sever/walbroel/CSSC_test/plots/TB_stat_BAH/"
-scatterplot_name = "TB_scatterplot" + wkd
-bias_ev_plotname = "TB_abs_biasevolution" + wkd
-output_filename = "clear_sky_sonde_comparison" + wkd
+scatterplot_name = "TB_scatterplot"
+bias_ev_plotname = "TB_abs_biasevolution"
+output_filename = "clear_sky_sonde_comparison"
 print("Running TB_statistics_raw.py ..........\n")
 run_TB_statistics_raw(mwr_concat_path, path_pam_ds, out_path, plot_path, scatterplot_name,
 	bias_ev_plotname, output_filename,
