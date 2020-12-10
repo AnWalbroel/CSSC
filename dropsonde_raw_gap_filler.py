@@ -222,13 +222,15 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 				if key == 'T':
+					# If BAHAMAS Temperature measurement is available use it as target in case only the top 15 % of measurements
+					# are missing. Otherwise:
 					# Temperature: If dropsondes with measurements (ipflag = 0) from that day exist, estimate their average T gradient.
-					# If it clearly deviates from the standard atmospheric T gradient, then use a modified ICAO_standard atmosphere which
-					# has an adapted T gradient. Otherwise:
-					# Assume standard atmosphere (shifted accordingly to avoid a jump between the last known value and the extrapolation;
-					# + noise (whose strength is according to instrument noise (from Hock and Franklin 1999)). ICAO standard atmosphere taken from:
+					# If the extrapolated dropsonde temperature then deviates from BAH T by more than 5 K, use the ICAO std atmosphere
+					# as T gradient:
+					# Standard atmosphere (shifted accordingly to avoid a jump between the last known value and the extrapolation).
+					# ICAO standard atmosphere taken from:
 					# https://www.dwd.de/DE/service/lexikon/begriffe/S/Standardatmosphaere_pdf.pdf?__blob=publicationFile&v=3
-					# ICAO_standard_T = 288.15 - 0.0065*alt
+					ICAO_standard_T = 288.15 - 0.0065*alt
 					noise_strength = 0/2
 
 
@@ -249,9 +251,12 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 						# Or use mean T gradient of highest 20 measurements and continue with this gradient:
 						# compute mean T gradient of highest 20 measurements:
 						mean_T_grad = np.mean(np.asarray([(new_var[idx-19:idx+1] - new_var[idx-20:idx]) / (alt[idx-19:idx+1] - alt[idx-20:idx])]))
-						ICAO_standard_T = 288.15 + mean_T_grad*alt
+						extra_T = 288.15 + mean_T_grad*alt
 
-						new_var[idx+1:] = ICAO_standard_T[idx+1:] - (ICAO_standard_T[idx] - new_var[idx]) + np.random.normal(0.0, noise_strength, n_alt_new-idx-1)
+						new_var[idx+1:] = extra_T[idx+1:] - (extra_T[idx] - new_var[idx]) + np.random.normal(0.0, noise_strength, n_alt_new-idx-1)
+
+						if np.abs(new_var[-1] - bah_T) > 5:    # then the deviation from BAHAMAS T is too great and we use the ICAO std atmosphere
+							new_var[idx+1:] = ICAO_standard_T[idx+1:] - (ICAO_standard_T[idx] - new_var[idx])
 
 
 					new_ipflag_dict[key][idx+1:] = 1		# setting the interpol flag
@@ -820,9 +825,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 			# add another condition that checks if e.g. nearly no measurements exist at all (for T, P and RH):
-			if np.any([np.count_nonzero(~np.isnan(sonde_dict['T'])) < 0.05*len(sonde_dict['T']),
-				np.count_nonzero(~np.isnan(sonde_dict['P'])) < 0.05*len(sonde_dict['P']),
-				np.count_nonzero(~np.isnan(sonde_dict['RH'])) < 0.05*len(sonde_dict['RH']),
+			if np.any([np.count_nonzero(~np.isnan(sonde_dict['T'])) < 0.1*len(sonde_dict['T']),
+				np.count_nonzero(~np.isnan(sonde_dict['P'])) < 0.1*len(sonde_dict['P']),
+				np.count_nonzero(~np.isnan(sonde_dict['RH'])) < 0.1*len(sonde_dict['RH']),
 				np.count_nonzero(~np.isnan(sonde_dict['lat'])) < 0.05*len(sonde_dict['lat']),
 				np.count_nonzero(~np.isnan(sonde_dict['lon'])) < 0.05*len(sonde_dict['lon']),
 				np.count_nonzero(~np.isnan(sonde_dict['u_wind'])) < 0.05*len(sonde_dict['u_wind']),
@@ -1155,13 +1160,15 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 				if key == 'T':
+					# If BAHAMAS Temperature measurement is available use it as target in case only the top 15 % of measurements
+					# are missing. Otherwise:
 					# Temperature: If dropsondes with measurements (ipflag = 0) from that day exist, estimate their average T gradient.
-					# If it clearly deviates from the standard atmospheric T gradient, then use a modified ICAO_standard atmosphere which
-					# has an adapted T gradient. Otherwise:
-					# Assume standard atmosphere (shifted accordingly to avoid a jump between the last known value and the extrapolation;
-					# + noise (whose strength is according to instrument noise (from Hock and Franklin 1999)). ICAO standard atmosphere taken from:
+					# If the extrapolated dropsonde temperature then deviates from BAH T by more than 5 K, use the ICAO std atmosphere
+					# as T gradient:
+					# Standard atmosphere (shifted accordingly to avoid a jump between the last known value and the extrapolation).
+					# ICAO standard atmosphere taken from:
 					# https://www.dwd.de/DE/service/lexikon/begriffe/S/Standardatmosphaere_pdf.pdf?__blob=publicationFile&v=3
-					# ICAO_standard_T = 288.15 - 0.0065*alt
+					ICAO_standard_T = 288.15 - 0.0065*alt
 					noise_strength = 0/2
 
 
@@ -1182,9 +1189,12 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 						# Or use mean T gradient of highest 20 measurements and continue with this gradient:
 						# compute mean T gradient of highest 20 measurements:
 						mean_T_grad = np.mean(np.asarray([(new_var[idx-19:idx+1] - new_var[idx-20:idx]) / (alt[idx-19:idx+1] - alt[idx-20:idx])]))
-						ICAO_standard_T = 288.15 + mean_T_grad*alt
+						extra_T = 288.15 + mean_T_grad*alt
 
-						new_var[idx+1:] = ICAO_standard_T[idx+1:] - (ICAO_standard_T[idx] - new_var[idx]) + np.random.normal(0.0, noise_strength, n_alt_new-idx-1)
+						new_var[idx+1:] = extra_T[idx+1:] - (extra_T[idx] - new_var[idx]) + np.random.normal(0.0, noise_strength, n_alt_new-idx-1)
+
+						if np.abs(new_var[-1] - bah_T) > 5:    # then the deviation from BAHAMAS T is too great and we use the ICAO std atmosphere
+							new_var[idx+1:] = ICAO_standard_T[idx+1:] - (ICAO_standard_T[idx] - new_var[idx])
 
 
 					new_ipflag_dict[key][idx+1:] = 1		# setting the interpol flag
@@ -1779,9 +1789,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 					print("########## Day: " + launch_date + " ##########\n")
 
 					# add another condition that checks if e.g. nearly no measurements exist at all (for T, P and RH):
-					if np.any([np.count_nonzero(~np.isnan(sonde_dict_o['T'])) < 0.05*len(sonde_dict_o['T']),
-						np.count_nonzero(~np.isnan(sonde_dict_o['P'])) < 0.05*len(sonde_dict_o['P']),
-						np.count_nonzero(~np.isnan(sonde_dict_o['RH'])) < 0.05*len(sonde_dict_o['RH']),
+					if np.any([np.count_nonzero(~np.isnan(sonde_dict_o['T'])) < 0.1*len(sonde_dict_o['T']),
+						np.count_nonzero(~np.isnan(sonde_dict_o['P'])) < 0.1*len(sonde_dict_o['P']),
+						np.count_nonzero(~np.isnan(sonde_dict_o['RH'])) < 0.1*len(sonde_dict_o['RH']),
 						np.count_nonzero(~np.isnan(sonde_dict_o['lat'])) < 0.05*len(sonde_dict_o['lat']),
 						np.count_nonzero(~np.isnan(sonde_dict_o['lon'])) < 0.05*len(sonde_dict_o['lon']),
 						np.count_nonzero(~np.isnan(sonde_dict_o['u_wind'])) < 0.05*len(sonde_dict_o['u_wind']),
