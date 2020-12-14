@@ -4,6 +4,7 @@ import glob
 import copy
 import os
 import pdb
+import warnings
 from general_importer import * 		# General Importer reporting for duty.
 import datetime
 import matplotlib
@@ -157,7 +158,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 			# any value above obs_height will be deleted: So if e.g. Z has got values above obs_height, delete them:
 			# find the first index that overshoots obs_height:
-			overshoot = np.argwhere(new_dict['Z'] >= obs_height)
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				overshoot = np.argwhere(new_dict['Z'] >= obs_height)
 			if len(overshoot) > 0:
 				overshoot = overshoot[0][0] + 1
 
@@ -385,7 +388,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 			# any value above obs_height will be deleted: So if e.g. Z has got values above obs_height, delete them:
 			# find the first index that overshoots obs_height:
-			overshoot = np.argwhere(new_dict['Z'] >= obs_height)
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				overshoot = np.argwhere(new_dict['Z'] >= obs_height)
 			if len(overshoot) > 0:
 				overshoot = overshoot[0][0] + 1
 
@@ -690,7 +695,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 				d_met = new_dict[key][1:] - new_dict[key][:-1]		# change of meteorological variable 'key'
 
-				exceed_idx = np.argwhere(np.abs(d_met / dz) >= met_threshold)
+				with warnings.catch_warnings():
+					warnings.simplefilter("ignore")
+					exceed_idx = np.argwhere(np.abs(d_met / dz) >= met_threshold)
 				new_dict[key][exceed_idx] = float('nan')
 
 			return new_dict
@@ -838,7 +845,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 				continue
 
 			# add jet another condition that checks if the sonde got stuck mid air (gps alt. values don't really decrease with time):
-			if not np.any(sonde_dict['Z'] < 1500):	# then I assume that the whole launch was doomed
+			if not np.any(sonde_dict['Z'][~np.isnan(sonde_dict['Z'])] < 1500):	# then I assume that the whole launch was doomed
 				print("Sonde got stuck in mid air. 'gpsalt' doesn't seem to include any values < 1500 m.\n")
 				stuck_sondes.append(sonde_nc)
 				tot_sonde_stuck = tot_sonde_stuck + 1
@@ -869,8 +876,12 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			# the raw dropsonde files show an altitude variable with increases from [0 to -1] in general: but probably due to gps tracking,
 			# the altitude decreases at the "top": this must be filtered out:
 			# find highest index where altitude[idx+1] - altitude[idx] > 0:
-			altitude_stop = np.argwhere(sonde_dict['Z'][1:] - sonde_dict['Z'][0:-1] > 0)[-1][0] + 2
-			# +2 because it's used as indexing [... : altitude_stop] => +1 and because the array size had been reduced by 1 during argwhere(...)
+			# CATCH WARNINGS: This is a warning that appears because nans still lie within sonde_dict['Z'] and a comparison if nan
+			# is greater than 0 is not possible
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				altitude_stop = np.argwhere(sonde_dict['Z'][1:] - sonde_dict['Z'][0:-1] > 0)[-1][0] + 2
+				# +2 because it's used as indexing [... : altitude_stop] => +1 and because the array size had been reduced by 1 during argwhere(...)
 
 
 			# if the lowest non nan value of the altitude coordinate is < 0: cut the rest off:
@@ -1097,7 +1108,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 			# any value above obs_height will be deleted: So if e.g. Z has got values above obs_height, delete them:
 			# find the first index that overshoots obs_height:
-			overshoot = np.argwhere(new_dict['Z'] >= obs_height)
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				overshoot = np.argwhere(new_dict['Z'] >= obs_height)
 			ill_keys.append('Z')
 			if len(overshoot) > 0:
 				overshoot = overshoot[0][0] + 1
@@ -1324,7 +1337,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 			# any value above obs_height will be deleted: So if e.g. Z has got values above obs_height, delete them:
 			# find the first index that overshoots obs_height:
-			overshoot = np.argwhere(new_dict['Z'] >= obs_height)
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				overshoot = np.argwhere(new_dict['Z'] >= obs_height)
 			ill_keys.append('Z')
 			if len(overshoot) > 0:
 				overshoot = overshoot[0][0] + 1
@@ -1626,7 +1641,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 				d_met = new_dict[key][1:] - new_dict[key][:-1]		# change of meteorological variable 'key'
 
-				exceed_idx = np.argwhere(np.abs(d_met / dz) >= met_threshold)
+				with warnings.catch_warnings():
+					warnings.simplefilter("ignore")
+					exceed_idx = np.argwhere(np.abs(d_met / dz) >= met_threshold)
 				new_dict[key][exceed_idx] = float('nan')
 
 			return new_dict
@@ -1802,7 +1819,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 						continue
 
 					# add jet another condition that checks if the sonde got stuck mid air (gps alt. values don't really decrease with time):
-					if not np.any(sonde_dict_o['Z'][:] < 1500):	# then I assume that the whole launch was doomed
+					if not np.any(sonde_dict_o['Z'][~np.isnan(sonde_dict['Z'])] < 1500):	# then I assume that the whole launch was doomed
 						print("Sonde got stuck in mid air. 'Z' doesn't seem to include any values < 1500 m.\n")
 						stuck_sondes.append(sn)
 						tot_sonde_stuck = tot_sonde_stuck + 1
