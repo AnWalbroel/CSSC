@@ -1,5 +1,5 @@
-# CSSC
-CSSC: Clear Sky Sonde Comparison. This is a code package to find offsets of microwave radiometer
+# CSSC: Clear Sky Sonde Comparison.
+This is a code package to find offsets of microwave radiometer
 channels onboard the HALO research aircraft by comparing measured with simulated brightness 
 temperatures in clear sky conditions. Information about executing the code package can be found below.
 
