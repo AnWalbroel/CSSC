@@ -210,10 +210,6 @@ def run_concat_mwr(day_folders, mwr_out_path):
 			# 601118572: TB[601118572]
 
 
-		# Convert time axis to seconds since 2020-01-01 00:00:00 UTC:
-		time_axis = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + time_axis
-
-
 		# Save glued MWR modules into a new .nc file:
 		mwr_outname = mwr_out_path + folder_date + "_v01.nc"
 		with nc.Dataset(mwr_outname, "w", format="NETCDF4") as new_nc:
@@ -223,9 +219,9 @@ def run_concat_mwr(day_folders, mwr_out_path):
 			new_nc.createDimension("number_frequencies", n_frq)
 
 			# Global attributes:
-			new_nc.description = "HAMP: v01: All Microwave Radiometer modules (KV, 11990, 183) concatenated and brought to a time line from the earliest to the latest measurement of the day."
+			new_nc.description = "v01: All HAMP Microwave Radiometer modules (KV, 11990, 183) concatenated and brought to a time line from the earliest to the latest measurement of the day."
 			new_nc.history = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-			new_nc.author = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
+			new_nc.author = "Andreas Walbroel (Mail: a.walbroel@.uni-koeln.de)"
 
 			# Create variables:
 			freq = new_nc.createVariable("frequencies", "f8", ("number_frequencies"))
@@ -241,7 +237,7 @@ def run_concat_mwr(day_folders, mwr_out_path):
 			freq.long_name = "Channel frequency"
 			freq.units = "GHz"
 			time.long_name = "sample time"
-			time.units = "seconds since 2020-01-01 00:00:00"
+			time.units = "seconds since 1970-01-01 00:00:00"
 			time.comment = "reference time zone indicated in field time_reference"
 			rain_flag.description = "0 = no rain, 1 = raining"
 			elev_angle.long_name = "viewing_elevation angle"

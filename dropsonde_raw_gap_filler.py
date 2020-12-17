@@ -96,7 +96,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 							hole_size[k] = hole_size[k] + 1		# k won't be incremented until m finds another non-nan value
 
 					else:
-						print("\n Something unexpected happened when trying to find the nan values in the middle of the dropsonde launch... Contact 'awalbroe@smail.uni-koeln.de'. \n")
+						print("\n Something unexpected happened when trying to find the nan values in the middle of the dropsonde launch... Contact 'a.walbroel@uni-koeln.de'. \n")
 
 				# holes have been identified: edit the FIRST hole (editing depends on the size of the hole...)
 				c = 0 		# dummy variable needed for the right jumps in hole_size and nan_idx. c is used to address nan_idx and therefore new_var...
@@ -134,7 +134,6 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			bah_keys = ['time', 'altitude', 'ta', 'p', 'rh']
 			bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
 			bah_dict['time'] = np.rint(bah_dict['time']).astype(float) # must be done to avoid small fractions of seconds
-			bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
 
 			# to get the obs_height: average BAHAMAS altitude over +/- 10 seconds around launch_time:
 			# find time index of the sonde launches:
@@ -207,8 +206,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 			np.random.seed(42)		# needed for the added noise
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S") # for printing
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S") # for printing
 
 			for key in ill_keys:
 
@@ -437,8 +435,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 			np.random.seed(42)		# needed for the added noise
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S") # for printing
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S") # for printing
 
 			for key in ill_keys:
 
@@ -607,8 +604,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			alt = old_dict['Z']
 			n_alt = len(alt)
 			new_ipflag_dict = old_ipflag_dict
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S")
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S")
 
 			lim = 200		# if there are no measurements below this altitude then the extrapolation at the surface won't be performed
 
@@ -713,8 +709,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 				fig = plt.figure(figsize=(6,9))
 				a1 = plt.axes()
 
-				time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-				launch_date = (datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_sec)).strftime("%Y%m%d_%H%M%S")
+				launch_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y%m%d_%H%M%S")
 				a1.plot(sonde_dict[key], sonde_dict['Z'], linewidth=1.2, color=(0,0,0))
 
 				titletext = r"Dropsonde " + key + " profile from EUREC4A campaign: " + launch_date
@@ -751,13 +746,13 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			new_nc.description = """EUREC4A campaign RAW dropsondes. Extrapolated when enough measurements were given. More information required? Contact author (listed below).
 				'alt_old' represents the dimension of height levels of the uninterpolated / extrapolated variables. alt represents the height levels of the extrapolated variables."""
 			new_nc.history = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-			new_nc.author = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
+			new_nc.author = "Andreas Walbroel (Mail: a.walbroel@uni-koeln.de)"
 
 
 			# create variables, set attributes and save values into the created variables:
 			# attributes = [[units], [description]]
-			attributes = [['m', 'm s^-1', 'degree East', 'seconds since 2020-01-01 00:00:00 UTC', 'degree East', '%', 'm s^-1',
-			'Pa', 'Pa', 'degree North', 'm', '%', 'K', 'seconds since 2020-01-01 00:00:00 UTC',
+			attributes = [['m', 'm s^-1', 'degree East', 'seconds since 1970-01-01 00:00:00 UTC', 'degree East', '%', 'm s^-1',
+			'Pa', 'Pa', 'degree North', 'm', '%', 'K', 'seconds since 1970-01-01 00:00:00 UTC',
 			'K', 'degree North'],
 			['gps reported altitude above mean sea level', 'meridional wind (northwards is > 0)', 'reference longitude',
 			'reference time', 'longitude', 'reference relative humidity', 'zonal wind (eastwards is > 0)', 'air pressure',
@@ -824,10 +819,9 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 		for sonde_nc in HALO_sondes_NC:
 
 			sonde_dict = readrawNCraw(sonde_nc)
-			time_convention_seconds = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_seconds).strftime("%Y-%m-%d")	# time delta required
+			launch_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y-%m-%d")	# time delta required
 			dropsonde_date = (datetime.datetime.strptime(launch_date, "%Y-%m-%d")).strftime("%Y%m%d")	# date displayed in the filename ... comfy way to find the right BAHAMAS data for std_extrapol
-			print("########## Day: " + datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_seconds).strftime("%Y-%m-%d %H:%M:%S") + " ##########\n")
+			print("########## Day: " + datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S") + " ##########\n")
 			print("Input: ", sonde_nc)
 
 
@@ -1046,7 +1040,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 							hole_size[k] = hole_size[k] + 1		# k won't be incremented until m finds another non-nan value
 
 					else:
-						print("\n Something unexpected happened when trying to find the nan values in the middle of the dropsonde launch... Contact 'awalbroe@smail.uni-koeln.de'. \n")
+						print("\n Something unexpected happened when trying to find the nan values in the middle of the dropsonde launch... Contact 'a.walbroel@uni-koeln.de'. \n")
 
 				# holes have been identified: edit the FIRST hole (editing depends on the size of the hole...)
 				c = 0 		# dummy variable needed for the right jumps in hole_size and nan_idx. c is used to address nan_idx and therefore new_var...
@@ -1084,7 +1078,6 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			bah_keys = ['time', 'altitude', 'ta', 'p', 'rh']
 			bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
 			bah_dict['time'] = np.rint(bah_dict['time']).astype(float) # must be done to avoid small fractions of seconds
-			bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
 
 			# to get the obs_height: average BAHAMAS altitude over +/- 10 seconds around launch_time:
 			# find time index of the sonde launches:
@@ -1154,8 +1147,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 			np.random.seed(42)		# needed for the added noise
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S") # for printing
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S") # for printing
 
 			ill_keys.pop()
 			for key in ill_keys: # .pop() removes 'Z' from ill_keys
@@ -1383,8 +1375,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 
 
 			np.random.seed(42)		# needed for the added noise
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S") # for printing
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S") # for printing
 
 			ill_keys.pop()
 			for key in ill_keys: # .pop() removes 'Z' from ill_keys
@@ -1553,8 +1544,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			alt = old_dict['Z']
 			n_alt = len(alt)
 			new_ipflag_dict = old_ipflag_dict
-			time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-			launch_time = (datetime.datetime.utcfromtimestamp(new_dict['launch_time'] + time_convention_sec)).strftime("%Y-%m-%d %H:%M:%S")
+			launch_time = datetime.datetime.utcfromtimestamp(new_dict['launch_time']).strftime("%Y-%m-%d %H:%M:%S")
 
 			lim = 200		# if there are no measurements below this altitude then the extrapolation at the surface won't be performed
 
@@ -1659,8 +1649,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 				fig = plt.figure(figsize=(6,9))
 				a1 = plt.axes()
 
-				time_convention_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-				launch_date = (datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + time_convention_sec)).strftime("%Y%m%d_%H%M%S")
+				launch_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y%m%d_%H%M%S")
 				a1.plot(sonde_dict[key], sonde_dict['Z'], linewidth=1.2, color=(0,0,0))
 
 				titletext = r"Dropsonde " + key + " profile from EUREC4A campaign: " + launch_date
@@ -1697,13 +1686,13 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 			new_nc.description = """EUREC4A campaign JOANNE Level 3 dropsondes. Extrapolated when enough measurements were given. More information required? Contact author (listed below).
 				'alt_old' represents the dimension of height levels of the uninterpolated / extrapolated variables. alt represents the height levels of the extrapolated variables."""
 			new_nc.history = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-			new_nc.author = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
+			new_nc.author = "Andreas Walbroel (Mail: a.walbroel@uni-koeln.de)"
 
 
 			# create variables, set attributes and save values into the created variables:
 			# attributes = [[units], [description]]
 			attributes = [
-							['m', 'degree North', 'degree East', 'degree North', 'degree East', 'seconds since 2020-01-01 00:00:00 UTC',
+							['m', 'degree North', 'degree East', 'degree North', 'degree East', 'seconds since 1970-01-01 00:00:00 UTC',
 								'Pa', 'K', 'm', 'm s^-1', 'm s^-1', '%'],
 							['Flight altitude on dropsonde launch', 'Latitude on dropsonde launch', 'Longitude on dropsonde_launch',
 								'Latitude', 'Longitude', 'Sonde launch time', 'Air pressure', 'Air temperature', 'Height',
@@ -1798,8 +1787,7 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 						else:
 							raise IndexError("This index shape was rather unexpected. Something's wrong here.")
 
-					time_convention_seconds = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-					launch_date = datetime.datetime.utcfromtimestamp(sonde_dict_o['launch_time'] + time_convention_seconds).strftime("%Y-%m-%d %H:%M:%S")	# time delta required
+					launch_date = datetime.datetime.utcfromtimestamp(sonde_dict_o['launch_time']).strftime("%Y-%m-%d %H:%M:%S")	# time delta required
 					dropsonde_date = (datetime.datetime.strptime(launch_date, "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%d")	# date displayed in the filename ... comfy way to
 																														# find the right BAHAMAS data for std_extrapol
 					launch_date_for_filename = (datetime.datetime.strptime(launch_date, "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%d_%H%M%ST")

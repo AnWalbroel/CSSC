@@ -93,8 +93,7 @@ def run_TB_statistics_raw(
 
 		pam_ds_dict = import_DSpam_nc(pam_ds_file, '', True, True)	# imports all keys and performs double side band averaging
 
-		time_convention_delta = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-		work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'][0] + time_convention_delta).strftime("%Y%m%d")
+		work_date_temp = datetime.datetime.utcfromtimestamp(pam_ds_dict['datatime'][0]).strftime("%Y%m%d")
 
 		print("Date: " + work_date_temp)
 
@@ -147,8 +146,7 @@ def run_TB_statistics_raw(
 
 		# find the correct aircraft altitude for each launch:
 		if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
-			bah_dict['time'] = ((datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() +
-				np.rint(bah_dict['time']).astype(float))	# convert to seconds since 2020-01-01 00:00:00
+			bah_dict['time'] = np.rint(bah_dict['time']).astype(float)
 			t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
 			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
 			obs_height = drop_alt
@@ -164,7 +162,7 @@ def run_TB_statistics_raw(
 		# pamtra simulated TBs and information about launch time:
 		tb_sonde_temp = np.asarray([pam_ds_dict['tb'][0, outlevel_idx[0], :]])			# shall be a (nlaunches x frequencies) array
 		time_temp = pam_ds_dict['datatime']
-		date_temp = datetime.datetime.utcfromtimestamp(time_temp[0] + time_convention_delta).strftime("%Y%m%d")
+		date_temp = datetime.datetime.utcfromtimestamp(time_temp[0]).strftime("%Y%m%d")
 
 
 		# find if std dev threshold is surpassed for any sonde launch:
@@ -239,7 +237,7 @@ def run_TB_statistics_raw(
 	# Create dataset:
 
 	# convert time to datetime object:
-	time = np.asarray([datetime.datetime.utcfromtimestamp(k + time_convention_delta) for k in time])
+	time = np.asarray([datetime.datetime.utcfromtimestamp(k) for k in time])
 	date = [u'%s' % ttt.strftime('%Y%m%d') for ttt in time] # "u'%s' %" is a workaround, that should give a unicode string in python 2 and python 3
 
 	TB_stat_DS = xr.Dataset({
@@ -265,7 +263,7 @@ def run_TB_statistics_raw(
 		'longitude':		(['time'], sonde_lon, {'description': "Longitude of sonde launch", 'units': "degree east"}),
 		'latitude':			(['time'], sonde_lat, {'description': "Latitude of sonde launch", 'units': "degree north"}),
 		},
-		coords={'time': (['time'], time, {'description': "timestamp or seconds since 2020-01-01 00:00:00"}),
+		coords={'time': (['time'], time, {'description': "timestamp or seconds since 1970-01-01 00:00:00"}),
 			'frequency': (['frequency'], frequency, {'description': "channel frequency", 'units': "GHz"})})
 
 
@@ -274,7 +272,7 @@ def run_TB_statistics_raw(
 	TB_stat_DS.attrs['description'] = ("HAMP MWR vs. pamtra simulated dropsondes: " +
 		"Includes 20 seconds averaged TBs (and std deviation) from MWR and the respective pamtra simulated dropsonde TBs.")
 	TB_stat_DS.attrs['history'] = "Created: " + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-	TB_stat_DS.attrs['author'] = "Andreas Walbroel (Mail: awalbroe@smail.uni-koeln.de)"
+	TB_stat_DS.attrs['author'] = "Andreas Walbroel (Mail: a.walbroel@uni-koeln.de)"
 	TB_stat_DS.attrs['comparison_window'] = 10
 	TB_stat_DS.attrs['comparison_window_description'] = "Time delta (seconds) after the drop release that is used for comparison of each sonde."
 	TB_stat_DS.attrs['comparison_window_before'] = 10
@@ -292,7 +290,7 @@ def run_TB_statistics_raw(
 	encoding = {'time': dict()}
 
 	encoding['time']['dtype'] = 'float64'
-	encoding['time']['units'] = 'seconds since 2020-01-01 00:00:00'
+	encoding['time']['units'] = 'seconds since 1970-01-01 00:00:00'
 
 	nfreq = len(frequency)
 	bias = np.zeros((nfreq,))		# will contain the bias for each frequency

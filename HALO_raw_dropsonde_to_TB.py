@@ -67,8 +67,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		sonde_dict = readNCraw_V01(filename_in)
 
 		# Import GHRSST CMC data:
-		convention_timedelta_sec = (datetime.datetime(2020,1,1) - datetime.datetime(1970,1,1)).total_seconds()
-		dropsonde_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time'] + convention_timedelta_sec).strftime("%Y%m%d")
+		dropsonde_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y%m%d")
 		sst_filename = [sst_file for idx, sst_file in enumerate(SST_files_NC) if dropsonde_date in sst_file]
 		sst_keys = ['time', 'lat', 'lon', 'analysed_sst', 'analysis_error']
 		sst_dict = import_GHRSST(sst_filename[0], sst_keys)
@@ -81,7 +80,6 @@ def run_HALO_raw_dropsonde_to_TB(
 			bah_keys = ['time', 'altitude']
 			bah_dict = import_BAHAMAS_unified(bah_filename[0], bah_keys)
 			bah_dict['time'] = np.rint(bah_dict['time']).astype(float)		# must be done to avoid small fractions of seconds
-			bah_dict['time'] = (datetime.datetime(1970,1,1) - datetime.datetime(2020,1,1)).total_seconds() + bah_dict['time']	# convert to seconds since 2020-01-01 00:00:00
 
 
 		n_alt = len(sonde_dict['Z'])		# number of height levels

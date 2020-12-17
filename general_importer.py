@@ -30,9 +30,9 @@ def readNC(filename):
 	'w_wind': np.asarray(file_nc.variables['w_wind']) \
 	}
 
-	# handling the launch time: converting it to unixtime: seconds since 2020-01-01 00:00:00 UTC
+	# handling the launch time: converting it to unixtime: seconds since 1970-01-01 00:00:00 UTC
 	time_base = dt.datetime.strptime(file_nc.variables['launch_time'].units[14:], "%Y-%m-%d %H:%M:%S") # time base given in the units attribute
-	dropsonde_dict['launch_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
+	dropsonde_dict['launch_time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['launch_time']
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
 	dropsonde_dict['T'] = dropsonde_dict['tdry']
@@ -45,7 +45,7 @@ def readNC(filename):
 
 # This function works similar to readNC but loads all variables into the dictionary that will be returned:
 # Variables with a designated unit that is not an SI unit will be converted to SI units. Rel. humidity will be in % though.
-# Timestamps will be given in seconds since 2020-01-01 00:00:00 UTC
+# Timestamps will be given in seconds since 1970-01-01 00:00:00 UTC
 def readNCraw(filename, verbose=False):
 	file_nc = nc.Dataset(filename)
 
@@ -67,8 +67,8 @@ def readNCraw(filename, verbose=False):
 				if verbose: print("From g/kg to kg/kg: " + str(nc_keys))
 
 	time_base = dt.datetime.strptime(file_nc.variables['launch_time'].units[14:], "%Y-%m-%d %H:%M:%S") # time base given in the units attribute
-	dropsonde_dict['launch_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
-	dropsonde_dict['reference_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['reference_time']
+	dropsonde_dict['launch_time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['launch_time']
+	dropsonde_dict['reference_time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['reference_time']
 	if verbose: print("\n")
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
@@ -82,7 +82,7 @@ def readNCraw(filename, verbose=False):
 
 # This function works similar to readNCraw but suits the raw dropsonde data with ending PRAW.nc:
 # Variables with a designated unit that is not an SI unit will be converted to SI units. Rel. humidity will be in % though.
-# Timestamps will be given in seconds since 2020-01-01 00:00:00 UTC
+# Timestamps will be given in seconds since 1970-01-01 00:00:00 UTC
 def readrawNCraw(filename, verbose=False):
 	file_nc = nc.Dataset(filename)
 
@@ -118,9 +118,9 @@ def readrawNCraw(filename, verbose=False):
 				if verbose: print("From g/kg to kg/kg: " + str(nc_keys))
 
 	time_base = dt.datetime.strptime(file_nc.variables['launch_time'].units[14:-4], "%Y-%m-%d %H:%M:%S") # time base given in the units attribute
-	dropsonde_dict['launch_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
-	dropsonde_dict['reference_time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['reference_time']
-	dropsonde_dict['time'] = (time_base - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['time']
+	dropsonde_dict['launch_time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['launch_time']
+	dropsonde_dict['reference_time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['reference_time']
+	dropsonde_dict['time'] = (time_base - dt.datetime(1970,1,1)).total_seconds() + dropsonde_dict['time']
 	if verbose: print("\n")
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
@@ -134,7 +134,7 @@ def readrawNCraw(filename, verbose=False):
 
 # This importer routine is designed for JOANNE2.0 data to convert T to Kelvin, P to Pa, ...
 # Timestamp is already in Unixtime (seconds since 1970-01-01 00:00:00 UTC) and will be converted
-# to seconds since 2020-01-01 00:00:00 UTC:
+# to seconds since 1970-01-01 00:00:00 UTC:
 def readNCrawJOANNE2(filename, verbose=False):
 	file_nc = nc.Dataset(filename)
 
@@ -167,7 +167,6 @@ def readNCrawJOANNE2(filename, verbose=False):
 				dropsonde_dict[nc_keys] = dropsonde_dict[nc_keys]*100
 
 	dropsonde_dict['time'] = np.rint(dropsonde_dict['time']).astype(float)
-	dropsonde_dict['time'] = (dt.datetime(1970,1,1) - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['time']
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
 	dropsonde_dict['T'] = dropsonde_dict['T']
@@ -182,7 +181,7 @@ def readNCrawJOANNE2(filename, verbose=False):
 
 # This importer routine is designed for JOANNE3.0 data.
 # Timestamp is already in Unixtime (seconds since 1970-01-01 00:00:00 UTC) and will be converted
-# to seconds since 2020-01-01 00:00:00 UTC:
+# to seconds since 1970-01-01 00:00:00 UTC:
 def readNCrawJOANNE3(	filename,
 						keys=['alt', 'launch_time', 'lat', 'lon',
 							'p', 'ta', 'rh', 'u', 'v', 'flight_lat',
@@ -214,7 +213,6 @@ def readNCrawJOANNE3(	filename,
 
 
 	dropsonde_dict['launch_time'] = np.rint(dropsonde_dict['launch_time']).astype(float)
-	dropsonde_dict['launch_time'] = (dt.datetime(1970,1,1) - dt.datetime(2020,1,1)).total_seconds() + dropsonde_dict['launch_time']
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
 	dropsonde_dict['T'] = dropsonde_dict['ta']
@@ -271,7 +269,7 @@ def import_GHRSST(filename, keys=''):	# imports SST data from GHRSST data base. 
 		elif key == 'time':	# convert to unixtime:
 			GHRSST_dict[key] = np.asarray(file_nc.variables[key]).astype(float)
 			time_base = dt.datetime.strptime(file_nc.variables[key].units[14:], "%Y-%m-%d %H:%M:%S") # time base given in the units attribute
-			GHRSST_dict[key] = (time_base - dt.datetime(2020,1,1)).total_seconds() + GHRSST_dict[key]
+			GHRSST_dict[key] = (time_base - dt.datetime(1970,1,1)).total_seconds() + GHRSST_dict[key]
 
 		else:
 			GHRSST_dict[key] = np.asarray(file_nc.variables[key])
@@ -333,10 +331,6 @@ def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports s
 			DSpam_dict[key] = DSpam_dict[key][0,:]
 		if DSpam_dict[key].shape == (1,grid_y,grid_z):	# 3D arrays
 			DSpam_dict[key] = DSpam_dict[key][0,:,:]
-
-		# # # if key == 'datatime':	# convert to seconds since 2020-01-01 00:00:00	# not necessary because the
-		# # # time stamp of dropsondes was already in sec since 2020-01-01
-			# # # DSpam_dict[key] = (dt.datetime(1970,1,1) - dt.datetime(2020,1,1)).total_seconds() + DSpam_dict[key]
 
 
 	if 'tb' in keys:
@@ -513,7 +507,7 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 
 	# get some more auxiliary information: e.g. sonde ID from the third column or from footer:
 	sonde_ID = float(listOfLines[headersize+1][2])
-	launch_time = (dt.datetime.strptime(footer[3][5] + footer[3][6], "%Y-%m-%d,%H:%M:%S") - dt.datetime(2020,1,1)).total_seconds()
+	launch_time = (dt.datetime.strptime(footer[3][5] + footer[3][6], "%Y-%m-%d,%H:%M:%S") - dt.datetime(1970,1,1)).total_seconds()
 	launch_time_string = dt.datetime.strptime(footer[3][5] + footer[3][6], "%Y-%m-%d,%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
 
 	# pre-launch meteorological conditions:
@@ -617,9 +611,9 @@ def import_sonde_raw_P(filename): # import raw dropsonde files with ending _P.<s
 			nan_idx = np.argwhere(data_dict[varname] == fillVal_dict[varname])
 			data_dict[varname][nan_idx] = float('nan')
 
-	# glue date and time together and convert it to unixtime (seconds since 2020-01-01 00:00:00 UTC):
+	# glue date and time together and convert it to unixtime (seconds since 1970-01-01 00:00:00 UTC):
 	data_dict['sonde_time'] = np.asarray([(dt.datetime.strptime(date + " " + time + "0000", "%y%m%d %H%M%S.%f") -
-		dt.datetime(2020,1,1)).total_seconds() for date, time in zip(data_dict['UTC_Date'], data_dict['UTC_Time'])])
+		dt.datetime(1970,1,1)).total_seconds() for date, time in zip(data_dict['UTC_Date'], data_dict['UTC_Time'])])
 
 
 	return data_dict, aux_dict
