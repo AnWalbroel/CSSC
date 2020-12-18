@@ -316,7 +316,7 @@ def run_TB_statistics_raw(
 	TB_stat_DS['rmse'] = xr.DataArray(rmse, dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
 	TB_stat_DS['R'] = xr.DataArray(R, 		dims=('frequency'), coords={'frequency': TB_stat_DS.frequency})
 
-	TB_stat_DS.to_netcdf(out_path + output_filename + ".nc", mode='w', format='NETCDF4')
+	TB_stat_DS.to_netcdf(out_path + output_filename + ".nc", mode='w', format='NETCDF4', encoding=encoding)
 
 
 	# Closing the Dataset
