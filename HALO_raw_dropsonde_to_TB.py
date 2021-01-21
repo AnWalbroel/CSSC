@@ -58,7 +58,7 @@ def run_HALO_raw_dropsonde_to_TB(
 			raise ValueError("Unknown obs_height `%s'" % obs_height)
 	else:
 		BAH_files_NC = []
-		obs_height = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
+		obs_height_value = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
 
 	for filename_in in HALO_sondes_NC:
 		print('import', filename_in)
@@ -145,7 +145,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		if isinstance(obs_height, str) and obs_height == 'BAHAMAS':
 			bah_launch_idx = np.asarray([np.argwhere(bah_dict['time'] == pamData['timestamp'][0])]).flatten()		# had some dimensions too many -> flattened
 			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in bah_launch_idx])/100)*100
-			obs_height = drop_alt
+			obs_height_value = drop_alt
 
 		print(dropsonde_date + "\n")
 
@@ -155,7 +155,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		pamData['sfc_refl'][:] = 'F'
 		pamData['sfc_refl'][pamData['sfc_type'] == 1] = 'S'
 
-		pamData['obs_height'] = np.broadcast_to(obs_height, shape2d + [len(obs_height), ])			# must be changed to the actual top of soundings (or mwr altitude / bahamas altitude)
+		pamData['obs_height'] = np.broadcast_to(obs_height_value, shape2d + [len(obs_height_value), ]) # must be changed to the actual top of soundings (or mwr altitude / bahamas altitude)
 
 		# meteorolog. surface information:
 		# to find the SST: use the designated lat,lon in pamData to find the closest entry in the GHRSST dataset:
