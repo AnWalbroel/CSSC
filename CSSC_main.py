@@ -18,7 +18,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = "1" # workaround for pamtra and openblas, r
 	This is the control room for the Clear Sky Sonde Comparison (CSSC) code package where
 	you assign the required variables (mostly paths of data).
 	More information about each to be manually assigned variable can be found in
-	'clear_sky_sonde_comparison_README.txt'.
+	'README.md'.
 '''
 
 

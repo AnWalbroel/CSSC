@@ -83,7 +83,7 @@ def run_TB_statistics_raw(
 			raise ValueError("Unknown obs_height `%s'" % obs_height)
 	else:
 		BAH_files_NC = []
-		obs_height = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
+		obs_height_value = np.asarray(obs_height).flatten() # we need a 1D array, which is used for all dropsondes.
 
 
 	# cycle through all files (days) where a dropsonde (ds) could be pamtra simulated
@@ -149,10 +149,15 @@ def run_TB_statistics_raw(
 			bah_dict['time'] = np.rint(bah_dict['time']).astype(float)
 			t_idx = np.argwhere(bah_dict['time'] == pam_ds_dict['datatime']).flatten()
 			drop_alt = np.floor(np.asarray([np.mean(bah_dict['altitude'][i-10:i+10]) for i in t_idx])/100)*100		# drop altitude for each sonde (floored)
-			obs_height = drop_alt
+			obs_height_value = drop_alt
 
 		# select correct pamtra outlevel:
-		outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in obs_height]).flatten()
+		outlevel_idx = np.asarray([np.argwhere(pam_ds_dict['outlevels'][0] == alt) for alt in obs_height_value]).flatten()
+		outlevel_idx = 0 # pamtra simulations should be made under the consideration of the correct flight altitude
+		if not abs(pam_ds_dict['outlevels'][0, outlevel_idx] - obs_height_value[0]) <= 100:
+			raise ValueError("pam_ds_dict['outlevels'] and obs_height_value missmatch:\n%s\n%s"
+				% (pam_ds_dict['outlevels'], obs_height_value)
+			)
 
 		# positional information:
 		sonde_lon_temp = pam_ds_dict['longitude']
@@ -160,7 +165,7 @@ def run_TB_statistics_raw(
 
 
 		# pamtra simulated TBs and information about launch time:
-		tb_sonde_temp = np.asarray([pam_ds_dict['tb'][0, outlevel_idx[0], :]])			# shall be a (nlaunches x frequencies) array
+		tb_sonde_temp = np.asarray([pam_ds_dict['tb'][0, outlevel_idx, :]])			# shall be a (nlaunches x frequencies) array
 		time_temp = pam_ds_dict['datatime']
 		date_temp = datetime.datetime.utcfromtimestamp(time_temp[0]).strftime("%Y%m%d")
 
@@ -202,7 +207,7 @@ def run_TB_statistics_raw(
 			tb_used = np.reshape(tb_used_temp, (1, len(frequency)))
 			work_date = [work_date_temp]
 			time = time_temp
-			obsheight_save = obs_height
+			obsheight_save = obs_height_value
 			sondenumber = sondenumber_temp
 			sonde_lon = sonde_lon_temp
 			sonde_lat = sonde_lat_temp
@@ -218,7 +223,7 @@ def run_TB_statistics_raw(
 			tb_used = np.concatenate((tb_used, tb_used_temp), axis=0)
 			work_date.append(work_date_temp)
 			time = np.concatenate((time, time_temp), axis=0)
-			obsheight_save = np.concatenate((obsheight_save, obs_height), axis=0)
+			obsheight_save = np.concatenate((obsheight_save, obs_height_value), axis=0)
 			sondenumber = np.concatenate((sondenumber, sondenumber_temp), axis=0)
 			sonde_lon = np.concatenate((sonde_lon, sonde_lon_temp), axis=0)
 			sonde_lat = np.concatenate((sonde_lat, sonde_lat_temp), axis=0)
@@ -348,7 +353,7 @@ def run_TB_statistics_raw(
 			xerror = 1.0
 
 		# axis limits: min and max TB of all:
-		limits = np.asarray([np.nanmin(np.concatenate((tb_sonde_cf[:,k], tb_mean_cf[:,k]), axis=0))-2, 
+		limits = np.asarray([np.nanmin(np.concatenate((tb_sonde_cf[:,k], tb_mean_cf[:,k]), axis=0))-2,
 			np.nanmax(np.concatenate((tb_sonde_cf[:,k], tb_mean_cf[:,k]), axis=0))+2])
 
 		eb = ax2[k].errorbar(tb_sonde_cf[:,k], tb_mean_cf[:,k], xerr=xerror, yerr=tb_std_cf[:,k], ecolor=(0,0,0), elinewidth=0.4, linestyle='none', \
@@ -441,7 +446,7 @@ R = %.3f"""%(np.around(bias[k], decimals=2), np.around(rmse[k], decimals=2), np.
 	fig2.savefig(plot_path + scatterplot_name + ".png", dpi=400, bbox_inches='tight')
 	fig2.savefig(plot_path + scatterplot_name + ".pdf", orientation='portrait')
 
-	
+
 
 	###
 	# creating another figure showing the evolution of the bias over all flights:

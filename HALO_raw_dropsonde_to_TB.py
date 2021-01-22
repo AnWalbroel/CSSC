@@ -67,7 +67,7 @@ def run_HALO_raw_dropsonde_to_TB(
 		sonde_dict = readNCraw_V01(filename_in)
 
 		# Import GHRSST CMC data:
-		dropsonde_date = datetime.datetime.utcfromtimestamp(sonde_dict['launch_time']).strftime("%Y%m%d")
+		dropsonde_date = datetime.datetime.utcfromtimestamp(int(sonde_dict['launch_time'])).strftime("%Y%m%d")
 		sst_filename = [sst_file for idx, sst_file in enumerate(SST_files_NC) if dropsonde_date in sst_file]
 		sst_keys = ['time', 'lat', 'lon', 'analysed_sst', 'analysis_error']
 		sst_dict = import_GHRSST(sst_filename[0], sst_keys)

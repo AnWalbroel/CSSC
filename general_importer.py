@@ -305,8 +305,162 @@ def import_mwr_nc(filename, keys='', verbose=False): # imports stuff from the co
 	for key in keys:
 		mwr_dict[key] = np.asarray(file_nc.variables[key])
 
+	if 'uniform' in filename or 'unified' in filename:
+		if filename.endswith('v0.8.nc'):
+			correct_time_offsets(mwr_dict)
+		# add empty channel 26:
+		ch26 = np.nan + np.empty(mwr_dict['tb'].shape[0])
+		mwr_dict['tb'] = np.concatenate([mwr_dict['tb'], ch26[:, np.newaxis]], axis=1)
+		# rename from uniform scheme to RPG scheme
+		mwr_dict['TBs'] = mwr_dict['tb']
+
 	return mwr_dict
 
+def correct_time_offsets(mwr_dict):
+	"""in-place correct time offsets that were in the uniform data until version v0.8"""
+	band_KV = np.s_[0:14]
+	band_WF = np.s_[14:19]
+	band_G = np.s_[19:]
+
+	def shift(tb, o, s, band):
+		"""
+		shift tb timeseriesinplace.
+		o: offset in time (1st dimension)
+		s: slice that should be shifted
+		band: frequency band that is affected (2nd dimension)
+		"""
+		roll = np.roll(tb[s, band], o, axis=0)
+		if o > 0:
+			roll[:o, :] = np.nan # mask the elements that roll beyond the last position wre re-introduced at the first.
+		elif o < 0:
+			roll[o:, :] = np.nan # mask the elements that roll beyond the first position wre re-introduced at the end.
+
+		tb[s, band] = roll
+
+	date = dt.datetime.utcfromtimestamp(mwr_dict['time'][0]).strftime('%Y%m%d')
+
+	if date == '20200119':
+		o = -141
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_WF)
+
+	elif date == '20200122':
+		pass
+
+	elif date == '20200124':
+		o = -1
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_KV)
+		o = -2
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -7
+		s = np.s_[:21000]
+		shift(mwr_dict['tb'], o, s, band_G)
+		o = -3
+		s = np.s_[21000:29400]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200126':
+		s = np.s_[0: 23350]
+		o = -2
+		shift(mwr_dict['tb'], o, s, band_KV)
+		o = 1
+		shift(mwr_dict['tb'], o, s, band_WF)
+
+		s = np.s_[23700:]
+		o=-3
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200128':
+		pass
+
+	elif date == '20200130':
+		pass
+
+	elif date == '20200131':
+		o = -1
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -3
+		s = np.s_[21200:]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200202':
+		o = -2
+		s = np.s_[4000:6210]
+		shift(mwr_dict['tb'], o, s, band_KV)
+
+		o = -3
+		s = np.s_[:2000]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -1
+		s = np.s_[2000:4000]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -3
+		s = np.s_[4000:6255]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -2
+		s = np.s_[6255:6720]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -1
+		s = np.s_[6720:]
+		shift(mwr_dict['tb'], o, s, band_WF)
+
+		o = -2
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200205':
+		o = -3
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_KV)
+		o = -4
+		shift(mwr_dict['tb'], o, s, band_WF)
+
+
+	elif date == '20200207':
+		o = -2
+		s = np.s_[21300:23260]
+		shift(mwr_dict['tb'], o, s, band_KV)
+		o = 2
+		s = np.s_[:22400]
+		shift(mwr_dict['tb'], o, s, band_WF)
+
+	elif date == '20200209':
+		o = -2
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200211':
+		o = -2
+		s = np.s_[:22900]
+		shift(mwr_dict['tb'], o, s, band_KV)
+		o = -5
+		s = np.s_[21000:23500]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	elif date == '20200213':
+		pass
+
+	elif date == '20200215':
+		o = -2
+		s = np.s_[2034:28757]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -1
+		s = np.s_[20484:]
+		shift(mwr_dict['tb'], o, s, band_KV)
+
+	elif date == '20200218':
+		o = -1
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_WF)
+		o = -4
+		s = np.s_[:]
+		shift(mwr_dict['tb'], o, s, band_G)
+
+	else:
+		raise ValueError(f'Unknown time offsets on date "{date}".')
 
 def import_DSpam_nc(filename, keys='', withDSBA=True, alldims=True):	# imports stuff from PAMTRA simualted dropsondes
 	# keys to be imported may be assigned. Otherwise all variables will be read in.
