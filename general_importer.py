@@ -144,7 +144,17 @@ def readNCrawJOANNE2(filename, verbose=False):
 	dropsonde_dict['fillValues'] = dict()
 	for nc_keys in file_nc.variables.keys():
 		nc_var = file_nc.variables[nc_keys]
-		dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
+		# Convert any time units to seconds since 1970-01-01 00:00:00.
+
+		if (
+			'time' in nc_keys.lower() or
+			(hasattr(nc_var, 'standard_name') and 'time' in nc_var.standard_name.lower()) or
+			(hasattr(nc_var, 'long_name') and 'time' in nc_var.long_name.lower())
+		):
+			dates = nc.num2date(nc_var[:], nc_var.units)
+			dropsonde_dict[nc_keys] = nc.date2num(dates, 'seconds since 1970-01-01 00:00:00')
+		else:
+			dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
 
 		if hasattr(nc_var, '_FillValue'):
 			dropsonde_dict['fillValues'][nc_keys] = nc_var._FillValue
@@ -202,7 +212,16 @@ def readNCrawJOANNE3(	filename,
 			raise KeyError("I have no memory of this key '%s'. Key not found in JOANNE V3 dropsonde file." % nc_keys)
 
 		nc_var = file_nc.variables[nc_keys]
-		if nc_keys != 'platform': # because that key is a string
+
+		# Convert any time units to seconds since 1970-01-01 00:00:00.
+		if (
+			'time' in nc_keys.lower() or
+			(hasattr(nc_var, 'standard_name') and 'time' in nc_var.standard_name.lower()) or
+			(hasattr(nc_var, 'long_name') and 'time' in nc_var.long_name.lower())
+		):
+			dates = nc.num2date(nc_var[:], nc_var.units)
+			dropsonde_dict[nc_keys] = nc.date2num(dates, 'seconds since 1970-01-01 00:00:00')
+		elif nc_keys != 'platform': # because that key is a string
 			dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
 		else:
 			dropsonde_dict[nc_keys] = np.asarray(nc_var)
