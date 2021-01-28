@@ -201,6 +201,9 @@ def readNCrawJOANNE3(	filename,
 
 	if verbose: print("Working on '" + filename + "'.")
 
+	if 'alt' in keys and 'alt_bnds' not in keys:
+		keys.append('alt_bnds')
+
 	if keys == '':
 		keys = file_nc.variables.keys()
 
@@ -230,6 +233,10 @@ def readNCrawJOANNE3(	filename,
 			dropsonde_dict['fillValues'][nc_keys] = nc_var._FillValue
 			dropsonde_dict[nc_keys][dropsonde_dict[nc_keys] == nc_var._FillValue] = float('nan')
 
+
+	# Get real altitude from alt boundaries (at least necessary in version Level_3_v0.9.2)
+	dropsonde_dict['alt'] = np.mean(dropsonde_dict['alt_bnds'], -1)
+	dropsonde_dict.pop('alt_bnds')
 
 	dropsonde_dict['launch_time'] = np.rint(dropsonde_dict['launch_time']).astype(float)
 
