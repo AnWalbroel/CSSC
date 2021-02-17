@@ -23,6 +23,7 @@ def run_TB_statistics_raw(
 	output_filename,
 	obs_height='BAHAMAS',
 	path_BAH_data=None,
+	path_RADAR_data=None,
 ):
 	"""
 	Parameters
@@ -47,14 +48,16 @@ def run_TB_statistics_raw(
 			BAHAMAS files have to be in unified netCDF format and `path_BAH_data' has to be set.
 	path_BAH_data : str, optional
 		Path of BAHAMAS data in unified netCDF files. Required if obs_height == 'BAHAMAS'.
-	"""
+	path_RADAR_data : str, optional
+		Path of RADAR data in unified netCDF files. Is set use radar as additional cloud detector.
 
-	# this program shall find the mean + stddev TB from HAMP measurements from - to + 10 seconds of each dropsonde launch.
-	# Will be named: 'tb_mean' and 'tb_std'. It will also contain a variable 'tb_N' noting the number of HAMP mwr measurements
-	# in this 20 sec. time period. The measured TBs will be compared with TBs simulated from dropsondes using PAMTRA; the
-	# simulated TBs will be called 'tb_sonde'. The dropsonde release time will serve as timestamp and is saved in
-	# 'time'. Other supplemental information: 'frequency', string date(time) with description: "Date of corresponding Flight" and
-	# in units "YYYYMMDD", sonde index 'sondenumber'.
+	this program shall find the mean + stddev TB from HAMP measurements from - to + 10 seconds of each dropsonde launch.
+	Will be named: 'tb_mean' and 'tb_std'. It will also contain a variable 'tb_N' noting the number of HAMP mwr measurements
+	in this 20 sec. time period. The measured TBs will be compared with TBs simulated from dropsondes using PAMTRA; the
+	simulated TBs will be called 'tb_sonde'. The dropsonde release time will serve as timestamp and is saved in
+	'time'. Other supplemental information: 'frequency', string date(time) with description: "Date of corresponding Flight" and
+	in units "YYYYMMDD", sonde index 'sondenumber'.
+	"""
 
 	# Check if the sonde comparison output and plot path exist:
 	out_path_dir = os.path.dirname(out_path)
@@ -70,7 +73,7 @@ def run_TB_statistics_raw(
 	PAM_ds_ncfiles = sorted(glob.glob(path_pam_ds + "*.nc"))
 
 	if len(PAM_ds_ncfiles) == 0:
-		raise RuntimeError("Could not find any dropsonde files in `%s'"  % (PAM_ds_ncfiles + "*.nc"))
+		raise RuntimeError("Could not find any dropsonde files in `%s'*.nc"  % (PAM_ds_ncfiles))
 
 	if isinstance(obs_height, str):
 		if obs_height == 'BAHAMAS':
@@ -192,6 +195,12 @@ def run_TB_statistics_raw(
 			tb_used_temp[0,19:] = False
 		if cloudy_rest[0]:
 			tb_used_temp[0,:19] = False
+
+		if path_RADAR_data is not None:
+			# set tb_used_temp to false, if radar sees anything within window
+			if not is_radar_clear_sky(path_RADAR_data, work_date_temp, pam_ds_dict['datatime']):
+				print('>>>> Do not use sond', work_date_temp, 'because the radar sees something')
+				tb_used_temp[0, :] = False
 
 		# remove cases with extreme bias: considered cloudy if the bias_threshold is exceeded
 		bias_threshold = 30
@@ -536,3 +545,22 @@ R = %.3f"""%(np.around(bias[k], decimals=2), np.around(rmse[k], decimals=2), np.
 
 	fig3.savefig(plot_path + bias_ev_plotname + ".png", dpi=400, bbox_inches='tight')
 	fig3.savefig(plot_path + bias_ev_plotname + ".pdf", orientation='portrait')
+
+
+def is_radar_clear_sky(path_RADAR_data, work_date_temp, datatime):
+	# radar was not working on one day:
+	if work_date_temp == '20200122': return True
+
+	radar_ncfiles = sorted(glob.glob(path_RADAR_data + "*.nc"))
+	radar_file = [radarfile for radarfile in radar_ncfiles if work_date_temp in radarfile][0]
+
+	radar_dict = import_radar_nc(radar_file)
+
+	idx = np.argwhere((datatime - 10 <= radar_dict['time']) & (radar_dict['time'] < datatime + 10))
+	idx = np.reshape(idx, (idx.shape[0],))
+
+	# time-averaged number of reflective bins
+	count_reflective_bins = np.sum(radar_dict['dBZ'][idx, :] > -40) / len(idx)
+
+	# it is considered clear sky, if the mean nurmber of reflective bins ins smaller than 2
+	return count_reflective_bins < 2

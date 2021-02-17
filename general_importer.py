@@ -291,6 +291,32 @@ def import_BAHAMAS_unified(filename, keys=''):	# import data from BAHAMAS measur
 	return BAHAMAS_dict
 
 
+def import_radar_nc(filename, verbose=False): # imports stuff from the uniform radar files
+	radar_dict = dict()
+	import xarray
+	ds = xarray.open_dataset(filename)
+
+	keys = ['dBZ', 'height', 'time']
+
+	if verbose:
+		print("Importing variables " + str(keys) + " from file '" + filename + "'.\n")
+		print("You may ignore the warning: 'RuntimeWarning: invalid value encountered in greater' ... it just occurs because there are nan values in the mwr TBs.\n")
+
+	for key in keys:
+		radar_dict[key] = np.asarray(ds[key].values)
+
+	if not radar_dict['height'][0] < 30:
+		raise ValueError('Height does not start at surface as expected.')
+
+	# avoid surface clutter
+	radar_dict['dBZ'][:, :5] = np.nan
+	# convert time to unix time. (time and its units are decoded by xarray)
+	assert np.issubdtype(radar_dict['time'].dtype, np.datetime64)
+	radar_dict['time'] = (radar_dict['time'] - np.datetime64('1970-01-01 00:00:00'))/np.timedelta64(1, 's')
+
+	return radar_dict
+
+
 def import_mwr_nc(filename, keys='', verbose=False): # imports stuff from the concatenated mwr files (v01, ): keys to be imported can be assigned. Otherwise all variables will be read in:
 	mwr_dict = dict()
 	file_nc = nc.Dataset(filename)
