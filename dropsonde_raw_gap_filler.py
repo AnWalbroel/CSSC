@@ -1791,6 +1791,11 @@ def run_dropsonde_gap_filler(path_raw_sondes, data_out_path_halo,
 					dropsonde_date = (datetime.datetime.strptime(launch_date, "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%d")	# date displayed in the filename ... comfy way to
 																														# find the right BAHAMAS data for std_extrapol
 					launch_date_for_filename = (datetime.datetime.strptime(launch_date, "%Y-%m-%d %H:%M:%S")).strftime("%Y%m%d_%H%M%ST")
+
+					if launch_date_for_filename == '20200131_175736T':
+						print("Skipp sonde on ", launch_date_for_filename, " as the sonde has a dry bias.")
+						continue
+
 					print("########## Day: " + launch_date + " ##########\n")
 
 					# add another condition that checks if e.g. nearly no measurements exist at all (for T, P and RH):

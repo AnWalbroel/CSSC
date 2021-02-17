@@ -301,6 +301,7 @@ def run_TB_statistics_raw(
 	bias = np.zeros((nfreq,))		# will contain the bias for each frequency
 	rmse = np.zeros((nfreq,))		# will contain the rmse for each frequency
 	R = np.zeros((nfreq,))
+	N = np.zeros((nfreq,))
 
 	# Define cloudfree data:
 	tb_sonde_cf = TB_stat_DS.tb_sonde.where(TB_stat_DS.tb_used).values	# sets the cloudy conditions to nan
@@ -312,6 +313,7 @@ def run_TB_statistics_raw(
 		bias[k] = np.nanmean(tb_mean_cf[:,k] - tb_sonde_cf[:,k])
 		rmse[k] = np.sqrt(np.nanmean((np.abs(tb_sonde_cf[:,k] - tb_mean_cf[:,k]))**2))
 		tb_sonde_nonnan = tb_sonde_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]	# consider only nonnan cases
+		N[k] = len(tb_sonde_nonnan)
 		tb_mean_nonnan = tb_mean_cf[np.argwhere(~np.isnan(tb_mean_cf[:,k])).flatten(),k]		# consider only nonnan cases (tb_mean contains most nans) -> reference!
 		R[k] = np.corrcoef(tb_sonde_nonnan, tb_mean_nonnan)[0,1]
 
@@ -356,6 +358,9 @@ def run_TB_statistics_raw(
 		limits = np.asarray([np.nanmin(np.concatenate((tb_sonde_cf[:,k], tb_mean_cf[:,k]), axis=0))-2,
 			np.nanmax(np.concatenate((tb_sonde_cf[:,k], tb_mean_cf[:,k]), axis=0))+2])
 
+		if np.isnan(limits[0]):
+			limits = np.array([0., 1.])
+
 		eb = ax2[k].errorbar(tb_sonde_cf[:,k], tb_mean_cf[:,k], xerr=xerror, yerr=tb_std_cf[:,k], ecolor=(0,0,0), elinewidth=0.4, linestyle='none', \
 		color=(0,0,0), label="All considered flights")
 
@@ -392,7 +397,8 @@ def run_TB_statistics_raw(
 		ax2[k].text(0.01, 0.99, """\
 bias = %.2f K
 rmse = %.2f K
-R = %.3f"""%(np.around(bias[k], decimals=2), np.around(rmse[k], decimals=2), np.around(R[k], decimals=3)), \
+R = %.3f
+N = %d"""%(bias[k], rmse[k], R[k], N[k]),
 		horizontalalignment='left', verticalalignment='top', transform=ax2[k].transAxes, fontsize=4.5)
 
 		ax2[k].set_ylim(ymin=limits[0], ymax=limits[1])

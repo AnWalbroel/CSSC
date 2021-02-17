@@ -144,7 +144,17 @@ def readNCrawJOANNE2(filename, verbose=False):
 	dropsonde_dict['fillValues'] = dict()
 	for nc_keys in file_nc.variables.keys():
 		nc_var = file_nc.variables[nc_keys]
-		dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
+		# Convert any time units to seconds since 1970-01-01 00:00:00.
+
+		if (
+			'time' in nc_keys.lower() or
+			(hasattr(nc_var, 'standard_name') and 'time' in nc_var.standard_name.lower()) or
+			(hasattr(nc_var, 'long_name') and 'time' in nc_var.long_name.lower())
+		):
+			dates = nc.num2date(nc_var[:], nc_var.units)
+			dropsonde_dict[nc_keys] = nc.date2num(dates, 'seconds since 1970-01-01 00:00:00')
+		else:
+			dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
 
 		if hasattr(nc_var, '_FillValue'):
 			dropsonde_dict['fillValues'][nc_keys] = nc_var._FillValue
@@ -191,6 +201,9 @@ def readNCrawJOANNE3(	filename,
 
 	if verbose: print("Working on '" + filename + "'.")
 
+	if 'alt' in keys and 'alt_bnds' not in keys:
+		keys.append('alt_bnds')
+
 	if keys == '':
 		keys = file_nc.variables.keys()
 
@@ -202,7 +215,16 @@ def readNCrawJOANNE3(	filename,
 			raise KeyError("I have no memory of this key '%s'. Key not found in JOANNE V3 dropsonde file." % nc_keys)
 
 		nc_var = file_nc.variables[nc_keys]
-		if nc_keys != 'platform': # because that key is a string
+
+		# Convert any time units to seconds since 1970-01-01 00:00:00.
+		if (
+			'time' in nc_keys.lower() or
+			(hasattr(nc_var, 'standard_name') and 'time' in nc_var.standard_name.lower()) or
+			(hasattr(nc_var, 'long_name') and 'time' in nc_var.long_name.lower())
+		):
+			dates = nc.num2date(nc_var[:], nc_var.units)
+			dropsonde_dict[nc_keys] = nc.date2num(dates, 'seconds since 1970-01-01 00:00:00')
+		elif nc_keys != 'platform': # because that key is a string
 			dropsonde_dict[nc_keys] = np.asarray(nc_var).astype(np.float64)
 		else:
 			dropsonde_dict[nc_keys] = np.asarray(nc_var)
@@ -212,7 +234,12 @@ def readNCrawJOANNE3(	filename,
 			dropsonde_dict[nc_keys][dropsonde_dict[nc_keys] == nc_var._FillValue] = float('nan')
 
 
+	# Get real altitude from alt boundaries (at least necessary in version Level_3_v0.9.2)
+	dropsonde_dict['alt'] = np.mean(dropsonde_dict['alt_bnds'], -1)
+	dropsonde_dict.pop('alt_bnds')
+
 	dropsonde_dict['launch_time'] = np.rint(dropsonde_dict['launch_time']).astype(float)
+
 
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
 	dropsonde_dict['T'] = dropsonde_dict['ta']
@@ -221,6 +248,33 @@ def readNCrawJOANNE3(	filename,
 	dropsonde_dict['Z'] = dropsonde_dict['alt']
 	dropsonde_dict['u_wind'] = dropsonde_dict['u']
 	dropsonde_dict['v_wind'] = dropsonde_dict['v']
+
+	launch_datetime64 = np.datetime64('1970-01-01') + np.timedelta64(1, 's') * dropsonde_dict['launch_time']
+
+	# faulty temperature measurements at top (suspicious temperature inversion)
+	faulty_mask = launch_datetime64 == np.datetime64('2020-01-24T10:35:05')
+	assert faulty_mask.sum() == 1, 'There should me one match in version Level_3_v0.9.2'
+	faulty_index = np.where(faulty_mask)[0]
+
+	if verbose: print("Remove faulty temperature measurements at top in i_time =", faulty_index)
+	mask = dropsonde_dict['alt'] > 8680
+	dropsonde_dict['T'][faulty_index, mask] = np.nan
+	dropsonde_dict['P'][faulty_index, mask] = np.nan
+	dropsonde_dict['RH'][faulty_index, mask] = np.nan
+	dropsonde_dict['u_wind'][faulty_index, mask] = np.nan
+	dropsonde_dict['v_wind'][faulty_index, mask] = np.nan
+
+	# humidity profile too dry
+	faulty_mask = launch_datetime64 == np.datetime64('2020-01-31T17:57:36')
+	assert faulty_mask.sum() == 1, 'There should me one match in version Level_3_v0.9.2'
+	faulty_index = np.where(faulty_mask)[0]
+
+	if verbose: print("Remove sonde with too dry humidity in i_time =", faulty_index)
+	dropsonde_dict['T'][faulty_index, :] = np.nan
+	dropsonde_dict['P'][faulty_index, :] = np.nan
+	dropsonde_dict['RH'][faulty_index, :] = np.nan
+	dropsonde_dict['u_wind'][faulty_index, :] = np.nan
+	dropsonde_dict['v_wind'][faulty_index, :] = np.nan
 
 	return dropsonde_dict
 
