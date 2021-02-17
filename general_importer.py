@@ -240,6 +240,7 @@ def readNCrawJOANNE3(	filename,
 
 	dropsonde_dict['launch_time'] = np.rint(dropsonde_dict['launch_time']).astype(float)
 
+
 	# Convert to internal convention: Temperature = T, Pressure = P, relative humidity = RH, altitude = Z
 	dropsonde_dict['T'] = dropsonde_dict['ta']
 	dropsonde_dict['P'] = dropsonde_dict['p']
@@ -247,6 +248,33 @@ def readNCrawJOANNE3(	filename,
 	dropsonde_dict['Z'] = dropsonde_dict['alt']
 	dropsonde_dict['u_wind'] = dropsonde_dict['u']
 	dropsonde_dict['v_wind'] = dropsonde_dict['v']
+
+	launch_datetime64 = np.datetime64('1970-01-01') + np.timedelta64(1, 's') * dropsonde_dict['launch_time']
+
+	# faulty temperature measurements at top (suspicious temperature inversion)
+	faulty_mask = launch_datetime64 == np.datetime64('2020-01-24T10:35:05')
+	assert faulty_mask.sum() == 1, 'There should me one match in version Level_3_v0.9.2'
+	faulty_index = np.where(faulty_mask)[0]
+
+	if verbose: print("Remove faulty temperature measurements at top in i_time =", faulty_index)
+	mask = dropsonde_dict['alt'] > 8680
+	dropsonde_dict['T'][faulty_index, mask] = np.nan
+	dropsonde_dict['P'][faulty_index, mask] = np.nan
+	dropsonde_dict['RH'][faulty_index, mask] = np.nan
+	dropsonde_dict['u_wind'][faulty_index, mask] = np.nan
+	dropsonde_dict['v_wind'][faulty_index, mask] = np.nan
+
+	# humidity profile too dry
+	faulty_mask = launch_datetime64 == np.datetime64('2020-01-31T17:57:36')
+	assert faulty_mask.sum() == 1, 'There should me one match in version Level_3_v0.9.2'
+	faulty_index = np.where(faulty_mask)[0]
+
+	if verbose: print("Remove sonde with too dry humidity in i_time =", faulty_index)
+	dropsonde_dict['T'][faulty_index, :] = np.nan
+	dropsonde_dict['P'][faulty_index, :] = np.nan
+	dropsonde_dict['RH'][faulty_index, :] = np.nan
+	dropsonde_dict['u_wind'][faulty_index, :] = np.nan
+	dropsonde_dict['v_wind'][faulty_index, :] = np.nan
 
 	return dropsonde_dict
 
