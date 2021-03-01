@@ -1,12 +1,13 @@
 # CSSC: Clear Sky Sonde Comparison.
 This is a code package to find offsets of microwave radiometer
-channels onboard the HALO research aircraft by comparing measured with simulated brightness 
+channels onboard the HALO research aircraft by comparing measured with simulated brightness
 temperatures in clear sky conditions. Information about executing the code package can be found below.
 
 Guide to generate clear sky sonde comparison netCDF4 file that shows the bias, RMSE and correlation.
 Lines that are most likely to be edited by the user in the code are marked with "##################".
 
-1. 	Make sure that your MWR data is concatenated, which is usually not the case. The MWR data for each
+1. 	(This step can be skipped when using MWR data in uniform file format (Konow et al. 2019))
+	Make sure that your MWR data is concatenated, which is usually not the case. The MWR data for each
 	module (KV, 11990, 183) is saved separately as <current_date>.BRT.NC (current_date in YYMMDD,
 	e.g. "200119" being the 19th January 2020) file. Other file extensions like .ATN.NC (attenuation)
 	are also stored in the module folder but irrelevant for the clear sky sonde comparison.
@@ -108,6 +109,9 @@ Lines that are most likely to be edited by the user in the code are marked with 
 	brightness temperatures from dropsondes using "TB_statistics_raw.py". Some basic plots showing
 	e.g. a scatterplot of measured and simulated brightness temperatures can be included.
 
+	- If uniform MWR data is used (and step 1 was skipped) set "mwr_concat_path =" pointing to the
+		merged uniform data. Uniform MWR data file is detected by the importer if the path includes
+		"uniform" or "unified". If MWR data in "v0.8" is used, a correction of timings is applied.
 	- Set a path where the comparison netCDF4 file shall be saved to in "out_path = ".
 	- Set a path where the plots shall be saved to in "plot_path = ".
 	- Set a name for the scatterplot WITHOUT file extension (will be saved as .png and .pdf) in
